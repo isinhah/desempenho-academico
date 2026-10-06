@@ -1,0 +1,1 @@
+"""DTOs expostos pelo pacote."""

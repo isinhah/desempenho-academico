@@ -1,21 +1,13 @@
 """API do mini-portfólio."""
 
 from contextlib import asynccontextmanager
-import os
-from pathlib import Path
 
-from dotenv import load_dotenv
+from app.controllers.curso_controller import router as curso_router
+from app.controllers.escola_controller import router as escola_router
 from fastapi import FastAPI, HTTPException
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-
-load_dotenv(Path(__file__).with_name(".env"))
-
-database_url = os.getenv("DATABASE_URL")
-if not database_url:
-    raise RuntimeError("DATABASE_URL não foi definida no arquivo .env.")
-
-engine = create_engine(database_url, pool_pre_ping=True)
+from app.database import engine
 
 
 @asynccontextmanager
@@ -32,6 +24,8 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Mini Portfólio API", lifespan=lifespan)
+app.include_router(curso_router)
+app.include_router(escola_router)
 
 
 @app.get("/")
