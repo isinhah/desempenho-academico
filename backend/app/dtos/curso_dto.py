@@ -51,6 +51,11 @@ class CursoDetalheResponse(CursoResponse):
     mes_referencia: date | None = None
 
 
+class HistoricoIndicadorResponse(BaseModel):
+    mes_referencia: date
+    pct_evasao: float
+
+
 class CursoListResponse(BaseModel):
     """Representação direta de curso e último indicador persistido."""
 

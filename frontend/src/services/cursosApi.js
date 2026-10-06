@@ -24,3 +24,9 @@ export async function obterCurso(id, { signal } = {}) {
   if (!response.ok) throw new Error(`Não foi possível carregar o curso (HTTP ${response.status}).`)
   return response.json()
 }
+
+export async function listarHistoricoCurso(id, { signal } = {}) {
+  const response = await fetch(`${API_BASE_URL}/cursos/${id}/historico`, { signal })
+  if (!response.ok) throw new Error(`Não foi possível carregar o histórico do curso (HTTP ${response.status}).`)
+  return response.json()
+}

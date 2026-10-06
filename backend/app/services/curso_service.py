@@ -9,6 +9,7 @@ from app.domain.calculo_score import calcular_score_com_peso_efetivo
 from app.dtos.curso_dto import (
     CursoCreateRequest,
     CursoDetalheResponse,
+    HistoricoIndicadorResponse,
     CursoResponse,
     CursoUpdateRequest,
 )
@@ -105,6 +106,23 @@ class CursoService:
         if registro is None:
             raise ResourceNotFoundException("Curso não encontrado.")
         return self._montar_resposta(*registro)
+
+    def listar_historico(self, curso_id: int) -> list[HistoricoIndicadorResponse]:
+        if self.db.get(Curso, curso_id) is None:
+            raise ResourceNotFoundException("Curso não encontrado.")
+
+        historicos = self.db.scalars(
+            select(HistoricoIndicador)
+            .where(HistoricoIndicador.curso_id == curso_id)
+            .order_by(HistoricoIndicador.mes_referencia)
+        ).all()
+        return [
+            HistoricoIndicadorResponse(
+                mes_referencia=historico.mes_referencia,
+                pct_evasao=float(historico.pct_evasao),
+            )
+            for historico in historicos
+        ]
 
     def criar_curso(self, dados: CursoCreateRequest) -> CursoDetalheResponse:
         escola = self.db.get(Escola, dados.escola_id)

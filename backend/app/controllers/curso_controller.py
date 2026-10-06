@@ -7,6 +7,7 @@ from app.database import get_db
 from app.dtos.curso_dto import (
     CursoCreateRequest,
     CursoDetalheResponse,
+    HistoricoIndicadorResponse,
     CursoResponse,
     CursoUpdateRequest,
 )
@@ -26,6 +27,11 @@ def listar_cursos(
 @router.get("/{curso_id}", response_model=CursoDetalheResponse)
 def obter_curso(curso_id: int, db: Session = Depends(get_db)):
     return CursoService(db).obter_curso(curso_id)
+
+
+@router.get("/{curso_id}/historico", response_model=list[HistoricoIndicadorResponse])
+def listar_historico_curso(curso_id: int, db: Session = Depends(get_db)):
+    return CursoService(db).listar_historico(curso_id)
 
 
 @router.post("", response_model=CursoDetalheResponse, status_code=status.HTTP_201_CREATED)

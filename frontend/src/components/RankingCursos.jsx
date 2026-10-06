@@ -1,7 +1,11 @@
 import { ClassBadge } from './ClassBadge'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useEscolas } from '../hooks/useEscolas'
 import { useRankingCursos } from '../hooks/useRankingCursos'
+
+const HistoricoCurso = lazy(() => import('./HistoricoCurso').then((module) => ({
+  default: module.HistoricoCurso,
+})))
 
 function formatarScore(score) {
   return Number(score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -9,6 +13,7 @@ function formatarScore(score) {
 
 export function RankingCursos() {
   const [escolaId, setEscolaId] = useState('')
+  const [cursoSelecionado, setCursoSelecionado] = useState(null)
   const { escolas, loading: escolasLoading, error: escolasError } = useEscolas()
   const { cursos, loading, error, recarregar } = useRankingCursos(escolaId)
   return (
@@ -22,7 +27,10 @@ export function RankingCursos() {
           <span>Filtrar por escola</span>
           <select
             value={escolaId}
-            onChange={(event) => setEscolaId(event.target.value)}
+            onChange={(event) => {
+              setEscolaId(event.target.value)
+              setCursoSelecionado(null)
+            }}
             disabled={escolasLoading || Boolean(escolasError)}
           >
             <option value="">Todas as escolas</option>
@@ -36,13 +44,18 @@ export function RankingCursos() {
       {!loading && !error && (
         <div className="ranking-table-wrapper">
           <table className="ranking-table">
-            <thead><tr><th scope="col">#</th><th scope="col">Nome do curso</th><th scope="col">Escola</th><th scope="col">Score</th><th scope="col">Selo</th></tr></thead>
+            <thead><tr><th scope="col">#</th><th scope="col">Nome do curso</th><th scope="col">Escola</th><th scope="col">Score</th><th scope="col">Selo</th><th scope="col">Histórico</th></tr></thead>
             <tbody>
-              {cursos.map((curso, index) => <tr key={curso.id}><td className="position">{index + 1}</td><td className="course-name">{curso.nome}</td><td className="school-name">{curso.escola}</td><td className="score">{formatarScore(curso.score)}</td><td><ClassBadge classe={curso.classe} /></td></tr>)}
-              {cursos.length === 0 && <tr><td colSpan="5">Nenhum curso foi encontrado.</td></tr>}
+              {cursos.map((curso, index) => <tr key={curso.id}><td className="position">{index + 1}</td><td className="course-name">{curso.nome}</td><td className="school-name">{curso.escola}</td><td className="score">{formatarScore(curso.score)}</td><td><ClassBadge classe={curso.classe} /></td><td><button className="history-button" type="button" onClick={() => setCursoSelecionado(curso)}>Ver evolução</button></td></tr>)}
+              {cursos.length === 0 && <tr><td colSpan="6">Nenhum curso foi encontrado.</td></tr>}
             </tbody>
           </table>
         </div>
+      )}
+      {cursoSelecionado && (
+        <Suspense fallback={<div className="history-feedback">Carregando gráfico...</div>}>
+          <HistoricoCurso curso={cursoSelecionado} />
+        </Suspense>
       )}
     </section>
   )
