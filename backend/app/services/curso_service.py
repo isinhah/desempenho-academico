@@ -6,6 +6,7 @@ from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from app.domain.calculo_score import calcular_score_com_peso_efetivo
+from app.domain.auditoria import registrar_auditoria
 from app.dtos.curso_dto import (
     CursoCreateRequest,
     CursoDetalheResponse,
@@ -151,6 +152,8 @@ class CursoService:
         if curso is None:
             raise ResourceNotFoundException("Curso não encontrado.")
 
+        score_anterior = self.obter_curso(curso_id).score
+
         alteracoes = dados.model_dump(exclude_unset=True)
         for campo, valor in alteracoes.items():
             setattr(curso, campo, valor)
@@ -162,8 +165,16 @@ class CursoService:
         if {"alunos_ativos", "alunos_evadidos"} & alteracoes.keys():
             self._registrar_indicador(curso)
 
+        self.db.flush()
+        resposta = self.obter_curso(curso_id)
+        registrar_auditoria(
+            self.db,
+            curso_id=curso.id,
+            valor_antigo=score_anterior,
+            valor_novo=resposta.score,
+        )
         self.db.commit()
-        return self.obter_curso(curso.id)
+        return resposta
 
     def excluir_curso(self, curso_id: int) -> None:
         curso = self.db.get(Curso, curso_id)

@@ -10,12 +10,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.database import engine
 from app.exceptions import DatabaseUnavailableException
 from app.handlers.exception_handler import register_exception_handlers
+from app.models import LogAuditoria
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Valida a conexão antes de a API começar a receber requisições."""
     try:
+        LogAuditoria.__table__.create(bind=engine, checkfirst=True)
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
     except SQLAlchemyError as error:
