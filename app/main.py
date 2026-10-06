@@ -4,10 +4,12 @@ from contextlib import asynccontextmanager
 
 from app.controllers.curso_controller import router as curso_router
 from app.controllers.escola_controller import router as escola_router
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from app.database import engine
+from app.exceptions import DatabaseUnavailableException
+from app.handlers.exception_handler import register_exception_handlers
 
 
 @asynccontextmanager
@@ -24,6 +26,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Mini Portfólio API", lifespan=lifespan)
+register_exception_handlers(app)
 app.include_router(curso_router)
 app.include_router(escola_router)
 
@@ -42,9 +45,6 @@ def health_database():
                 text("SELECT current_database(), current_user")
             ).one()
     except SQLAlchemyError as error:
-        raise HTTPException(
-            status_code=503,
-            detail="Banco de dados indisponível.",
-        ) from error
+        raise DatabaseUnavailableException("Banco de dados indisponível.") from error
 
     return {"status": "ok", "database": database, "user": user}

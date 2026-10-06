@@ -1,0 +1,1 @@
+"""Handlers globais da API."""

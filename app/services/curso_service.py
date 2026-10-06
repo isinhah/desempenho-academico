@@ -2,7 +2,6 @@
 
 from datetime import date
 
-from fastapi import HTTPException, status
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
@@ -12,6 +11,11 @@ from app.dtos.curso_dto import (
     CursoDetalheResponse,
     CursoResponse,
     CursoUpdateRequest,
+)
+from app.exceptions import (
+    BusinessRuleException,
+    ConflictException,
+    ResourceNotFoundException,
 )
 from app.models import Curso, Escola, HistoricoIndicador
 
@@ -93,13 +97,13 @@ class CursoService:
             self._consulta_com_ultimo_indicador().where(Curso.id == curso_id)
         ).one_or_none()
         if registro is None:
-            raise HTTPException(status_code=404, detail="Curso não encontrado.")
+            raise ResourceNotFoundException("Curso não encontrado.")
         return self._montar_resposta(*registro)
 
     def criar_curso(self, dados: CursoCreateRequest) -> CursoDetalheResponse:
         escola = self.db.get(Escola, dados.escola_id)
         if escola is None:
-            raise HTTPException(status_code=404, detail="Escola não encontrada.")
+            raise ResourceNotFoundException("Escola não encontrada.")
 
         existe = self.db.scalar(
             select(Curso.id).where(
@@ -107,10 +111,7 @@ class CursoService:
             )
         )
         if existe is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Já existe um curso com este nome nesta escola.",
-            )
+            raise ConflictException("Já existe um curso com este nome nesta escola.")
 
         curso = Curso(**dados.model_dump())
         self.db.add(curso)
@@ -124,16 +125,15 @@ class CursoService:
     ) -> CursoDetalheResponse:
         curso = self.db.get(Curso, curso_id)
         if curso is None:
-            raise HTTPException(status_code=404, detail="Curso não encontrado.")
+            raise ResourceNotFoundException("Curso não encontrado.")
 
         alteracoes = dados.model_dump(exclude_unset=True)
         for campo, valor in alteracoes.items():
             setattr(curso, campo, valor)
 
         if curso.alunos_evadidos > curso.alunos_ativos:
-            raise HTTPException(
-                status_code=422,
-                detail="alunos_evadidos não pode ser maior que alunos_ativos.",
+            raise BusinessRuleException(
+                "alunos_evadidos não pode ser maior que alunos_ativos."
             )
         if {"alunos_ativos", "alunos_evadidos"} & alteracoes.keys():
             self._registrar_indicador(curso)
@@ -144,7 +144,7 @@ class CursoService:
     def excluir_curso(self, curso_id: int) -> None:
         curso = self.db.get(Curso, curso_id)
         if curso is None:
-            raise HTTPException(status_code=404, detail="Curso não encontrado.")
+            raise ResourceNotFoundException("Curso não encontrado.")
         self.db.delete(curso)
         self.db.commit()
 

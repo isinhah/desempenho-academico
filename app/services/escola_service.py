@@ -1,10 +1,10 @@
 """Regras de negócio e persistência de escolas."""
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.dtos.escola_dto import EscolaCreateRequest, EscolaResponse
+from app.exceptions import ConflictException
 from app.models import Escola
 
 
@@ -19,10 +19,7 @@ class EscolaService:
     def criar_escola(self, dados: EscolaCreateRequest) -> EscolaResponse:
         existe = self.db.scalar(select(Escola.id).where(Escola.nome == dados.nome))
         if existe is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Já existe uma escola com este nome.",
-            )
+            raise ConflictException("Já existe uma escola com este nome.")
 
         escola = Escola(nome=dados.nome)
         self.db.add(escola)
