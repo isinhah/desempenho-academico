@@ -85,8 +85,14 @@ class CursoService:
             classe=score["classe"],
         )
 
-    def listar_cursos_com_score(self) -> list[CursoResponse]:
-        registros = self.db.execute(self._consulta_com_ultimo_indicador()).all()
+    def listar_cursos_com_score(
+        self, escola_id: int | None = None
+    ) -> list[CursoResponse]:
+        consulta = self._consulta_com_ultimo_indicador()
+        if escola_id is not None:
+            consulta = consulta.where(Curso.escola_id == escola_id)
+
+        registros = self.db.execute(consulta).all()
         return [
             CursoResponse(**self._montar_resposta(*registro).model_dump())
             for registro in registros

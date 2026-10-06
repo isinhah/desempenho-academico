@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { listarCursos } from '../services/cursosApi'
 
-export function useRankingCursos() {
+export function useRankingCursos(escolaId) {
   const [cursos, setCursos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -14,7 +14,7 @@ export function useRankingCursos() {
       setLoading(true)
       setError(null)
       try {
-        const dados = await listarCursos({ signal: controller.signal })
+        const dados = await listarCursos({ escolaId, signal: controller.signal })
         setCursos([...dados].sort((cursoA, cursoB) => cursoB.score - cursoA.score))
       } catch (requestError) {
         if (requestError.name !== 'AbortError') setError(requestError.message || 'Ocorreu um erro inesperado ao buscar os cursos.')
@@ -24,7 +24,7 @@ export function useRankingCursos() {
     }
     carregarCursos()
     return () => controller.abort()
-  }, [reloadKey])
+  }, [escolaId, reloadKey])
 
   return { cursos, loading, error, recarregar }
 }

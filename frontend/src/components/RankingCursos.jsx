@@ -1,4 +1,6 @@
 import { ClassBadge } from './ClassBadge'
+import { useState } from 'react'
+import { useEscolas } from '../hooks/useEscolas'
 import { useRankingCursos } from '../hooks/useRankingCursos'
 
 function formatarScore(score) {
@@ -6,7 +8,9 @@ function formatarScore(score) {
 }
 
 export function RankingCursos() {
-  const { cursos, loading, error, recarregar } = useRankingCursos()
+  const [escolaId, setEscolaId] = useState('')
+  const { escolas, loading: escolasLoading, error: escolasError } = useEscolas()
+  const { cursos, loading, error, recarregar } = useRankingCursos(escolaId)
   return (
     <section className="ranking-card" aria-labelledby="ranking-title">
       <div className="ranking-card__header">
@@ -14,7 +18,19 @@ export function RankingCursos() {
           <h2 id="ranking-title">Cursos classificados</h2>
           {!loading && !error && <p>{cursos.length} curso(s) encontrado(s)</p>}
         </div>
+        <label className="school-filter">
+          <span>Filtrar por escola</span>
+          <select
+            value={escolaId}
+            onChange={(event) => setEscolaId(event.target.value)}
+            disabled={escolasLoading || Boolean(escolasError)}
+          >
+            <option value="">Todas as escolas</option>
+            {escolas.map((escola) => <option key={escola.id} value={escola.id}>{escola.nome}</option>)}
+          </select>
+        </label>
       </div>
+      {escolasError && <p className="school-filter-error" role="alert">O filtro de escolas não pôde ser carregado.</p>}
       {loading && <div className="ranking-feedback" role="status"><div className="ranking-feedback__content"><div className="spinner" aria-hidden="true" /><p>Carregando ranking de cursos...</p></div></div>}
       {error && !loading && <div className="ranking-feedback ranking-feedback--error" role="alert"><div className="ranking-feedback__content"><p>{error}</p><button className="retry-button" type="button" onClick={recarregar}>Tentar novamente</button></div></div>}
       {!loading && !error && (

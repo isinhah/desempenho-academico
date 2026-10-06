@@ -1,6 +1,6 @@
 """Rotas HTTP de cursos."""
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -16,8 +16,11 @@ router = APIRouter(prefix="/cursos", tags=["Cursos"])
 
 
 @router.get("", response_model=list[CursoResponse])
-def listar_cursos(db: Session = Depends(get_db)):
-    return CursoService(db).listar_cursos_com_score()
+def listar_cursos(
+    escola_id: int | None = Query(default=None, gt=0),
+    db: Session = Depends(get_db),
+):
+    return CursoService(db).listar_cursos_com_score(escola_id=escola_id)
 
 
 @router.get("/{curso_id}", response_model=CursoDetalheResponse)
