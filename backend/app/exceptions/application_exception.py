@@ -15,16 +15,6 @@ class ResourceNotFoundException(ApplicationException):
     code = "recurso_nao_encontrado"
 
 
-class ConflictException(ApplicationException):
-    status_code = 409
-    code = "conflito"
-
-
-class BusinessRuleException(ApplicationException):
-    status_code = 422
-    code = "regra_de_negocio_invalida"
-
-
 class DatabaseUnavailableException(ApplicationException):
     status_code = 503
     code = "banco_indisponivel"

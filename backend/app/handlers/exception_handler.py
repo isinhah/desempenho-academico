@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.dtos.error_dto import ErrorResponse, ValidationErrorDetail
@@ -55,15 +55,15 @@ def register_exception_handlers(app: FastAPI) -> None:
             details,
         )
 
-    @app.exception_handler(IntegrityError)
-    async def integrity_exception_handler(
-        _: Request, exception: IntegrityError
+    @app.exception_handler(OperationalError)
+    async def database_unavailable_exception_handler(
+        _: Request, exception: OperationalError
     ) -> JSONResponse:
-        logger.warning("Violação de integridade no banco de dados: %s", exception.orig)
+        logger.warning("Banco de dados indisponível: %s", exception.orig)
         return _response(
-            409,
-            "conflito_de_dados",
-            "A operação conflita com dados já existentes.",
+            503,
+            "banco_indisponivel",
+            "Banco de dados indisponível.",
         )
 
     @app.exception_handler(StarletteHTTPException)
