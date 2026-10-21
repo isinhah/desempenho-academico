@@ -15,7 +15,6 @@ from app.handlers.exception_handler import register_exception_handlers
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """Valida a conexão antes de a API começar a receber requisições."""
     for tentativa in range(10):
         try:
             Base.metadata.create_all(bind=engine, checkfirst=True)

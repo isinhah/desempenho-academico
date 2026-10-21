@@ -3,7 +3,7 @@ from datetime import date
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.database import Base, engine
+from app.database import engine
 from app.models import Curso, Escola, HistoricoIndicador
 
 
@@ -44,9 +44,6 @@ def _validar_registro(registro: dict) -> dict:
 
 def executar_etl() -> None:
     """Valida e sincroniza ``cursos`` com as tabelas da aplicação."""
-    print("Preparando as tabelas da aplicação...", flush=True)
-    Base.metadata.create_all(bind=engine, checkfirst=True)
-
     try:
         with engine.begin() as conexao:
             print("Lendo dados da tabela cursos...", flush=True)
