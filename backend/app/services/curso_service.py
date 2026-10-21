@@ -82,10 +82,11 @@ class CursoService:
             consulta = consulta.where(Curso.escola_id == escola_id)
 
         registros = self.db.execute(consulta).all()
-        return [
+        cursos = [
             CursoResponse(**self._montar_resposta(*registro).model_dump())
             for registro in registros
         ]
+        return sorted(cursos, key=lambda curso: (-curso.score, curso.nome.casefold()))
 
     def obter_curso(self, curso_id: int) -> CursoDetalheResponse:
         registro = self.db.execute(

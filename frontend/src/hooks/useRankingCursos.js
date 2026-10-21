@@ -15,7 +15,7 @@ export function useRankingCursos(escolaId) {
       setError(null)
       try {
         const dados = await listarCursos({ escolaId, signal: controller.signal })
-        setCursos([...dados].sort((cursoA, cursoB) => cursoB.score - cursoA.score))
+        setCursos(dados)
       } catch (requestError) {
         if (requestError.name !== 'AbortError') setError(requestError.message || 'Ocorreu um erro inesperado ao buscar os cursos.')
       } finally {
