@@ -1,75 +1,57 @@
-# etapa 1 - score simples
+"""Regras puras para cálculo e classificação de scores acadêmicos."""
 
-# função que calcula o score simples
-def calcular_score_simples(nota_financeira: float, nota_academica: float) -> dict:
-    peso_financeiro =  0.60 #60%
-    peso_academico = 0.40 #40%
+from math import isclose
 
-    # 1. calculo do score consolidado
-    score = (nota_financeira * peso_financeiro) + (nota_academica * peso_academico)
 
-    # 2. faixas de classificação, (limiares = thresholds) de classificação
-    # são apenas exemplos, o documento não especificou os valores
+def _classificar_score(score: float) -> str:
     if score >= 80:
-        classe = "A"
-    elif score >= 60:
-        classe = "B"
-    else:
-        classe = "D"
+        return "A"
+    if score >= 60:
+        return "B"
+    return "D"
 
-    return {"score": round(score, 2), "classe": classe}
 
-# teste da etapa 1:
+def calcular_score_simples(nota_financeira: float, nota_academica: float) -> dict:
+    """Calcula o modelo inicial, mantido para fins acadêmicos (60%/40%)."""
+    score = (nota_financeira * 0.60) + (nota_academica * 0.40)
+    return {"score": round(score, 2), "classe": _classificar_score(score)}
 
-# print(calcular_score_simples(90, 70))
 
-# etapa 2 - peso efetivo
-
-# definição das dimensões
-    # cada dimensão tem seus dados de peso e indicadores
-    # a soma dos pesos de todas as dimensões deve dar obrigatoriamente 1.00 (100%)
-    # a soma dos Indicadores dentro de CADA Dimensão = 100%
-dimensoes = {
-    "financeiro": {
-        "peso_dimensao": 0.65, # peso dessa dimensão dentro do score geral
-        "indicadores": [ # lista dos indicadores que compoem essa dimensão
-            {"nome": "pct_rb_rol", "valor": 85, "peso_indicador": 0.70}, # indicador 1 com nota x, com x% de peso dentro do financeiro
-            {"nome": "pct_gp_rol", "valor": 75, "peso_indicador": 0.30}, # indicador 2 com nota x, com x% de peso dentro do financeiro
-        ],
-    },
-    "academico": {
-        "peso_dimensao": 0.35,
-        "indicadores": [
-            {"nome": "pct_evasao_invertido", "valor": 60, "peso_indicador": 1.0},
-        ],
-    },
-}
-
-# função que confere se os pesos estão corretos antes de calcular
 def validar_pesos(dimensoes: dict) -> bool:
-    soma_dimensoes = sum(d["peso_dimensao"] for d in dimensoes.values())
-    if round(soma_dimensoes, 2) != 1.0:
+    """Confirma que os pesos das dimensões e indicadores totalizam 100%."""
+    if not dimensoes:
         return False
-    for dim in dimensoes.values():
-        soma_indicadores = sum(i["peso_indicador"] for i in dim["indicadores"])
-        if round(soma_indicadores, 2) != 1.0:
+
+    soma_dimensoes = sum(dimensao["peso_dimensao"] for dimensao in dimensoes.values())
+    if not isclose(soma_dimensoes, 1.0, abs_tol=0.000001):
+        return False
+
+    for dimensao in dimensoes.values():
+        indicadores = dimensao["indicadores"]
+        if not indicadores:
             return False
+        soma_indicadores = sum(indicador["peso_indicador"] for indicador in indicadores)
+        if not isclose(soma_indicadores, 1.0, abs_tol=0.000001):
+            return False
+
     return True
 
-# função principal que calcula o score final do curso
+
 def calcular_score_com_peso_efetivo(dimensoes: dict) -> dict:
+    """Calcula o score com peso efetivo de cada indicador."""
     if not validar_pesos(dimensoes):
-        raise ValueError("Soma de pesos inválida — deve fechar em 100%")
+        raise ValueError("Soma de pesos inválida — deve fechar em 100%.")
 
-    score_total = 0
-    for dim in dimensoes.values():
-        for ind in dim["indicadores"]:
-            peso_efetivo = dim["peso_dimensao"] * ind["peso_indicador"]
-            score_total += ind["valor"] * peso_efetivo
+    score_total = 0.0
+    for dimensao in dimensoes.values():
+        for indicador in dimensao["indicadores"]:
+            valor = indicador["valor"]
+            if not 0 <= valor <= 100:
+                raise ValueError("O valor de cada indicador deve estar entre 0 e 100.")
+            peso_efetivo = dimensao["peso_dimensao"] * indicador["peso_indicador"]
+            score_total += valor * peso_efetivo
 
-    classe = "A" if score_total >= 80 else "B" if score_total >= 60 else "D"
-    return {"score": round(score_total, 2), "classe": classe}
-
-if __name__ == "__main__":
-    resultado = calcular_score_com_peso_efetivo(dimensoes)
-    print(resultado)
+    return {
+        "score": round(score_total, 2),
+        "classe": _classificar_score(score_total),
+    }
