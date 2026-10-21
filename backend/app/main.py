@@ -1,5 +1,6 @@
 """API do mini-portfólio."""
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from app.controllers.curso_controller import router as curso_router
@@ -7,7 +8,7 @@ from app.controllers.escola_controller import router as escola_router
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from app.database import engine
+from app.database import Base, engine
 from app.exceptions import DatabaseUnavailableException
 from app.handlers.exception_handler import register_exception_handlers
 from app.models import LogAuditoria
@@ -16,12 +17,16 @@ from app.models import LogAuditoria
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Valida a conexão antes de a API começar a receber requisições."""
-    try:
-        LogAuditoria.__table__.create(bind=engine, checkfirst=True)
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
-    except SQLAlchemyError as error:
-        raise RuntimeError("Não foi possível conectar ao banco de dados.") from error
+    for tentativa in range(10):
+        try:
+            Base.metadata.create_all(bind=engine, checkfirst=True)
+            with engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+            break
+        except SQLAlchemyError as error:
+            if tentativa == 9:
+                raise RuntimeError("Não foi possível conectar ao banco de dados.") from error
+            await asyncio.sleep(1)
 
     yield
     engine.dispose()

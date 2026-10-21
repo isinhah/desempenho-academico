@@ -15,7 +15,7 @@ from app.services.curso_service import CursoService
 
 router = APIRouter(prefix="/cursos", tags=["Cursos"])
 
-
+    
 @router.get("", response_model=list[CursoResponse])
 def listar_cursos(
     escola_id: int | None = Query(default=None, gt=0),
