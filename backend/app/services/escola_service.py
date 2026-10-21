@@ -1,10 +1,9 @@
-"""Regras de negócio e persistência de escolas."""
+"""Consultas analíticas relacionadas a escolas."""
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.dtos.escola_dto import EscolaCreateRequest, EscolaResponse
-from app.exceptions import ConflictException
+from app.dtos.escola_dto import EscolaResponse
 from app.models import Escola
 
 
@@ -15,14 +14,3 @@ class EscolaService:
     def listar_escolas(self) -> list[EscolaResponse]:
         escolas = self.db.scalars(select(Escola).order_by(Escola.nome)).all()
         return [EscolaResponse.model_validate(escola) for escola in escolas]
-
-    def criar_escola(self, dados: EscolaCreateRequest) -> EscolaResponse:
-        existe = self.db.scalar(select(Escola.id).where(Escola.nome == dados.nome))
-        if existe is not None:
-            raise ConflictException("Já existe uma escola com este nome.")
-
-        escola = Escola(nome=dados.nome)
-        self.db.add(escola)
-        self.db.commit()
-        self.db.refresh(escola)
-        return EscolaResponse.model_validate(escola)

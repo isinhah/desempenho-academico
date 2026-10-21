@@ -1,36 +1,21 @@
-"""Regras de negócio e persistência de cursos."""
-
-from datetime import date
+"""Consultas analíticas relacionadas a cursos."""
 
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from app.domain.calculo_score import calcular_score_com_peso_efetivo
-from app.domain.auditoria import registrar_auditoria
 from app.dtos.curso_dto import (
-    CursoCreateRequest,
     CursoDetalheResponse,
     HistoricoIndicadorResponse,
     CursoResponse,
-    CursoUpdateRequest,
 )
-from app.exceptions import (
-    BusinessRuleException,
-    ConflictException,
-    ResourceNotFoundException,
-)
+from app.exceptions import ResourceNotFoundException
 from app.models import Curso, Escola, HistoricoIndicador
 
 
 class CursoService:
     def __init__(self, db: Session):
         self.db = db
-
-    @staticmethod
-    def _calcular_pct_evasao(alunos_ativos: int, alunos_evadidos: int) -> float:
-        if alunos_ativos == 0:
-            return 0.0
-        return round((alunos_evadidos / alunos_ativos) * 100, 2)
 
     @staticmethod
     def _consulta_com_ultimo_indicador() -> Select:
@@ -126,72 +111,3 @@ class CursoService:
             )
             for historico in historicos
         ]
-
-    def criar_curso(self, dados: CursoCreateRequest) -> CursoDetalheResponse:
-        escola = self.db.get(Escola, dados.escola_id)
-        if escola is None:
-            raise ResourceNotFoundException("Escola não encontrada.")
-
-        existe = self.db.scalar(
-            select(Curso.id).where(
-                Curso.escola_id == dados.escola_id, Curso.nome == dados.nome
-            )
-        )
-        if existe is not None:
-            raise ConflictException("Já existe um curso com este nome nesta escola.")
-
-        curso = Curso(**dados.model_dump())
-        self.db.add(curso)
-        self.db.flush()
-        self._registrar_indicador(curso)
-        self.db.commit()
-        return self.obter_curso(curso.id)
-
-    def atualizar_curso(
-        self, curso_id: int, dados: CursoUpdateRequest
-    ) -> CursoDetalheResponse:
-        curso = self.db.get(Curso, curso_id)
-        if curso is None:
-            raise ResourceNotFoundException("Curso não encontrado.")
-
-        score_anterior = self.obter_curso(curso_id).score
-
-        alteracoes = dados.model_dump(exclude_unset=True)
-        for campo, valor in alteracoes.items():
-            setattr(curso, campo, valor)
-
-        if curso.alunos_evadidos > curso.alunos_ativos:
-            raise BusinessRuleException(
-                "alunos_evadidos não pode ser maior que alunos_ativos."
-            )
-        if {"alunos_ativos", "alunos_evadidos"} & alteracoes.keys():
-            self._registrar_indicador(curso)
-
-        self.db.flush()
-        resposta = self.obter_curso(curso_id)
-        registrar_auditoria(
-            self.db,
-            curso_id=curso.id,
-            valor_antigo=score_anterior,
-            valor_novo=resposta.score,
-        )
-        self.db.commit()
-        return resposta
-
-    def excluir_curso(self, curso_id: int) -> None:
-        curso = self.db.get(Curso, curso_id)
-        if curso is None:
-            raise ResourceNotFoundException("Curso não encontrado.")
-        self.db.delete(curso)
-        self.db.commit()
-
-    def _registrar_indicador(self, curso: Curso) -> None:
-        self.db.add(
-            HistoricoIndicador(
-                curso_id=curso.id,
-                mes_referencia=date.today(),
-                pct_evasao=self._calcular_pct_evasao(
-                    curso.alunos_ativos, curso.alunos_evadidos
-                ),
-            )
-        )
