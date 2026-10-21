@@ -3,18 +3,20 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, Float, ForeignKey, Integer, String
+from sqlalchemy import Date, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
 if TYPE_CHECKING:
     from app.models.escola_model import Escola
-    from app.models.historico_indicador_model import HistoricoIndicador
 
 
 class Curso(Base):
     __tablename__ = "curso"
+    __table_args__ = (
+        UniqueConstraint("escola_id", "nome", name="uq_curso_escola_nome"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     escola_id: Mapped[int] = mapped_column(ForeignKey("escola.id"), nullable=False)
@@ -30,6 +32,11 @@ class Curso(Base):
 
 class HistoricoIndicador(Base):
     __tablename__ = "historico_indicador"
+    __table_args__ = (
+        UniqueConstraint(
+            "curso_id", "mes_referencia", name="uq_historico_curso_mes_referencia"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     curso_id: Mapped[int] = mapped_column(ForeignKey("curso.id"), nullable=False)

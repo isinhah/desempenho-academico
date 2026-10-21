@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import Base, engine
-from app.models import Curso, Escola, HistoricoIndicador, LogAuditoria
+from app.models import Curso, Escola, HistoricoIndicador
 
 
 def calcular_pct_evasao(alunos_ativos: int, alunos_evadidos: int) -> float:

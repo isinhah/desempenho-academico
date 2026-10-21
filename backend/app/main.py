@@ -11,7 +11,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.database import Base, engine
 from app.exceptions import DatabaseUnavailableException
 from app.handlers.exception_handler import register_exception_handlers
-from app.models import LogAuditoria
 
 
 @asynccontextmanager
