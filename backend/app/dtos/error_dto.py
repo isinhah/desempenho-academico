@@ -1,5 +1,3 @@
-"""Contratos padronizados das respostas de erro da API."""
-
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -19,8 +17,6 @@ class ErrorResponse(BaseModel):
 
 
 class ErrorResponseExample:
-    """Exemplos reutilizáveis para documentação das rotas, quando necessário."""
-
     NOT_FOUND: dict[str, Any] = {
         "status": 404,
         "codigo": "recurso_nao_encontrado",

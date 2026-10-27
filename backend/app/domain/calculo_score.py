@@ -1,4 +1,4 @@
-"""Regras puras para cálculo e classificação de scores acadêmicos."""
+"""Regras para cálculo e classificação de scores acadêmicos."""
 
 from math import isclose
 
@@ -12,7 +12,6 @@ def _classificar_score(score: float) -> str:
 
 
 def calcular_score_simples(nota_financeira: float, nota_academica: float) -> dict:
-    """Calcula o modelo inicial, mantido para fins acadêmicos (60%/40%)."""
     score = (nota_financeira * 0.60) + (nota_academica * 0.40)
     return {"score": round(score, 2), "classe": _classificar_score(score)}
 

@@ -1,8 +1,7 @@
-"""API do mini-portfólio."""
-
 import asyncio
 from contextlib import asynccontextmanager
 
+from app.controllers.admin_controller import router as admin_router
 from app.controllers.curso_controller import router as curso_router
 from app.controllers.escola_controller import router as escola_router
 from fastapi import FastAPI
@@ -34,6 +33,7 @@ app = FastAPI(title="Mini Portfólio API", lifespan=lifespan)
 register_exception_handlers(app)
 app.include_router(curso_router)
 app.include_router(escola_router)
+app.include_router(admin_router)
 
 
 @app.get("/")
@@ -43,7 +43,6 @@ def inicio():
 
 @app.get("/health/database")
 def health_database():
-    """Confirma que a API consegue consultar o PostgreSQL configurado."""
     try:
         with engine.connect() as connection:
             database, user = connection.execute(

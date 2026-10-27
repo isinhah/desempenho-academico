@@ -1,5 +1,3 @@
-"""Conversão centralizada de exceções para os DTOs de erro da API."""
-
 import logging
 
 from fastapi import FastAPI, Request

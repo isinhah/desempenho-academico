@@ -1,5 +1,3 @@
-"""Contratos HTTP relacionados a escolas."""
-
 from pydantic import BaseModel, ConfigDict
 
 

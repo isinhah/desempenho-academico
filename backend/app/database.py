@@ -1,5 +1,3 @@
-"""Configuração compartilhada de acesso ao banco de dados."""
-
 import os
 from pathlib import Path
 from typing import Generator
@@ -8,8 +6,6 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-
-# O .env continua na raiz do projeto, um nível acima de app/.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 database_url = os.getenv("DATABASE_URL")
@@ -25,7 +21,6 @@ class Base(DeclarativeBase):
 
 
 def get_db() -> Generator[Session, None, None]:
-    """Entrega uma sessão por requisição e sempre a fecha ao final."""
     db = SessionLocal()
     try:
         yield db

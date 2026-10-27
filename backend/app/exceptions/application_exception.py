@@ -1,6 +1,3 @@
-"""Exceções independentes do transporte HTTP usadas pela camada de negócio."""
-
-
 class ApplicationException(Exception):
     status_code = 400
     code = "erro_de_negocio"

@@ -1,13 +1,9 @@
-"""Contratos HTTP relacionados a cursos."""
-
 from datetime import date
 
 from pydantic import BaseModel
 
 
 class CursoResponse(BaseModel):
-    """Resumo usado na listagem de cursos com score."""
-
     id: int
     nome: str
     escola: str

@@ -4,18 +4,14 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import engine
-from app.models import Curso, Escola, HistoricoIndicador
-
 
 def calcular_pct_evasao(alunos_ativos: int, alunos_evadidos: int) -> float:
-    """Calcula a evasão percentual sem dividir por zero."""
     if alunos_ativos == 0:
         return 0.0
     return round((alunos_evadidos / alunos_ativos) * 100, 2)
 
 
 def _validar_registro(registro: dict) -> dict:
-    """Normaliza e valida uma linha da tabela de origem."""
     escola = str(registro["escola"] or "").strip()
     curso = str(registro["curso"] or "").strip()
     alunos_ativos = registro["alunos_ativos"]
@@ -42,8 +38,7 @@ def _validar_registro(registro: dict) -> dict:
     }
 
 
-def executar_etl() -> None:
-    """Valida e sincroniza ``cursos`` com as tabelas da aplicação."""
+def executar_etl() -> int:
     try:
         with engine.begin() as conexao:
             print("Lendo dados da tabela cursos...", flush=True)
@@ -57,7 +52,7 @@ def executar_etl() -> None:
 
             if not registros:
                 print("Nenhum registro encontrado na tabela cursos.")
-                return
+                return 0
 
             print(f"Validando e sincronizando {len(registros)} registros...", flush=True)
             escolas_existentes = {
@@ -83,7 +78,6 @@ def executar_etl() -> None:
                     text("SELECT id, escola_id, nome FROM curso")
                 ).mappings()
             }
-            # O cadastro do curso representa o mês mais recente; o restante fica no histórico.
             dados_atuais = {}
             for registro in registros:
                 chave = (escolas_existentes[registro["escola"]], registro["curso"])
@@ -184,6 +178,7 @@ def executar_etl() -> None:
         ) from error
 
     print(f"ETL concluído: {len(registros)} registro(s) sincronizado(s).")
+    return len(registros)
 
 
 if __name__ == "__main__":
