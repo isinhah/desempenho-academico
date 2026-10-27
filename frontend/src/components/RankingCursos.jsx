@@ -15,13 +15,50 @@ function ResumoRanking({ cursos }) {
     cursosEmAtencao: cursos.filter((curso) => curso.classe === 'B' || curso.classe === 'D').length,
   }), [cursos])
   const cards = [
-    { label: 'Cursos analisados', value: cursos.length, description: 'na seleção atual' },
-    { label: 'Score médio', value: formatarScore(resumo.scoreMedio), description: 'em uma escala de 0 a 100' },
-    { label: 'Curso líder', value: resumo.lider.nome, description: `${formatarScore(resumo.lider.score)} · Classe ${resumo.lider.classe}`, tone: 'border-indigo-200 bg-linear-to-br from-white to-indigo-50', valueSize: 'text-base' },
-    { label: 'Em atenção', value: resumo.cursosEmAtencao, description: 'cursos nas classes B ou D', tone: 'border-amber-200 bg-linear-to-br from-white to-amber-50' },
+    {
+      label: 'Cursos analisados',
+      value: cursos.length,
+      description: 'na seleção atual',
+      tone: 'border-slate-200 bg-linear-to-br from-white to-slate-100',
+      labelTone: 'text-slate-600',
+      valueTone: 'text-slate-900',
+      descriptionTone: 'text-slate-600',
+      bar: 'bg-slate-400',
+    },
+    {
+      label: 'Score médio',
+      value: formatarScore(resumo.scoreMedio),
+      description: 'em uma escala de 0 a 100',
+      tone: 'border-sky-200 bg-linear-to-br from-white to-sky-100',
+      labelTone: 'text-sky-700',
+      valueTone: 'text-sky-950',
+      descriptionTone: 'text-sky-800',
+      bar: 'bg-sky-500',
+    },
+    {
+      label: 'Melhor desempenho',
+      value: resumo.lider.nome,
+      description: `${formatarScore(resumo.lider.score)} · Classe ${resumo.lider.classe}`,
+      tone: 'border-emerald-200 bg-linear-to-br from-white to-emerald-100',
+      labelTone: 'text-emerald-700',
+      valueTone: 'text-emerald-950',
+      descriptionTone: 'text-emerald-800',
+      bar: 'bg-emerald-500',
+      valueSize: 'text-base',
+    },
+    {
+      label: 'Em atenção',
+      value: resumo.cursosEmAtencao,
+      description: 'cursos nas classes B ou D',
+      tone: 'border-amber-200 bg-linear-to-br from-white to-amber-100',
+      labelTone: 'text-amber-800',
+      valueTone: 'text-amber-950',
+      descriptionTone: 'text-amber-800',
+      bar: 'bg-amber-500',
+    },
   ]
 
-  return <section className="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo do ranking">{cards.map((card) => <article key={card.label} className={`grid min-h-36 rounded-[14px] border border-slate-200 bg-white p-4.5 text-slate-600 shadow-[0_8px_22px_rgb(15_23_42_/_4%)] ${card.tone || ''}`}><span className="self-start text-[0.72rem] font-extrabold uppercase tracking-[0.07em] text-slate-500">{card.label}</span><strong className={`self-center truncate text-[1.6rem] leading-tight font-bold text-slate-900 ${card.valueSize || ''}`}>{card.value}</strong><span className="self-end text-[0.82rem]">{card.description}</span></article>)}</section>
+  return <section className="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo do ranking">{cards.map((card) => <article key={card.label} className={`relative grid min-h-36 overflow-hidden rounded-[14px] border p-4.5 shadow-[0_8px_22px_rgb(15_23_42_/_4%)] ${card.tone}`}><span className={`self-start text-[0.72rem] font-extrabold uppercase tracking-[0.07em] ${card.labelTone}`}>{card.label}</span><strong className={`self-center truncate text-[1.6rem] leading-tight font-bold ${card.valueTone} ${card.valueSize || ''}`}>{card.value}</strong><span className={`self-end text-[0.82rem] ${card.descriptionTone}`}>{card.description}</span><span className={`absolute inset-x-0 bottom-0 h-1 ${card.bar}`} aria-hidden="true" /></article>)}</section>
 }
 
 export function RankingCursos() {
