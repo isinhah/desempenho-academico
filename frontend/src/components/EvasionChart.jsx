@@ -1,8 +1,8 @@
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { formatarPercentual } from '../utils/formatters'
 
-const BRAND = '#4338CA'
-const BRAND_LIGHT = '#C7D2FE'
+const BRAND = '#4A1E6B'
+const BRAND_LIGHT = '#D7BCE8'
 
 export function EvasionChart({ data, height = 300 }) {
   const maiorValor = Math.max(...data.map((item) => Number(item.evasao)), 0)
