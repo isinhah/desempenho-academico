@@ -1,7 +1,6 @@
 const badgeClassByClasse = {
   A: 'bg-emerald-100 text-emerald-800',
   B: 'bg-amber-100 text-amber-800',
-  D: 'bg-rose-100 text-rose-800',
 }
 
 export function ClassBadge({ classe }) {

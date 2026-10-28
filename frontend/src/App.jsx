@@ -8,7 +8,7 @@ function PaginaRanking() {
   return (
     <main className="mx-auto w-[calc(100%-2rem)] max-w-6xl py-12 pb-16 max-sm:w-[calc(100%-1.5rem)] max-sm:py-8">
       <header className="mb-4">
-        <p className="text-xs font-bold text-indigo-700">PUCPR</p>
+        <p className="text-xs font-bold text-brand-700">PUCPR</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Análise de desempenho dos cursos</h1>
         <p className="mt-1 text-sm text-slate-600">Consulte o ranking, compare scores e acompanhe a evolução da evasão.</p>
       </header>
