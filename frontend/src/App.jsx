@@ -6,11 +6,11 @@ const PaginaAnaliseCurso = lazy(() => import('./components/PaginaAnaliseCurso').
 
 function PaginaRanking() {
   return (
-    <main className="mx-auto w-[calc(100%-2rem)] max-w-[1180px] py-16 pb-20 max-sm:w-[calc(100%-1.5rem)] max-sm:py-10">
-      <header className="mb-8 max-w-[700px]">
-        <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.11em] text-indigo-600">PUCPR</p>
-        <h1 className="text-[clamp(2rem,5vw,3.35rem)] leading-[1.04] font-bold tracking-[-0.045em] text-slate-900">Análise de desempenho dos cursos</h1>
-        <p className="mt-4 max-w-[620px] text-[1.03rem] leading-relaxed text-slate-500">Consulte o ranking, compare scores e acompanhe a evolução da evasão.</p>
+    <main className="mx-auto w-[calc(100%-2rem)] max-w-6xl py-12 pb-16 max-sm:w-[calc(100%-1.5rem)] max-sm:py-8">
+      <header className="mb-4">
+        <p className="text-xs font-bold text-indigo-700">PUCPR</p>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Análise de desempenho dos cursos</h1>
+        <p className="mt-1 text-sm text-slate-600">Consulte o ranking, compare scores e acompanhe a evolução da evasão.</p>
       </header>
       <RankingCursos />
     </main>
