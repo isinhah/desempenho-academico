@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 def processar(mensagem: dict[str, str]) -> None:
     email = EmailMessage()
     email["Subject"] = mensagem["assunto"]
-    email["From"] = os.getenv("EMAIL_FROM", "relatorios@faculdade")
+    email["From"] = os.getenv("EMAIL_FROM", "relatorios@faculdade.br")
     email["To"] = mensagem["para"]
     email.set_content(mensagem["texto"])
     email.add_alternative(mensagem["html"], subtype="html")

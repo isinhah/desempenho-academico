@@ -117,8 +117,8 @@ Edite `backend/.env` com a URL do **Session pooler** obtida no painel do Supabas
 DATABASE_URL=postgresql+psycopg://postgres.PROJECT_REF:SUA_SENHA@HOST_DO_SESSION_POOLER:5432/postgres?sslmode=require
 ADMIN_API_TOKEN=um-token-longo-e-aleatorio
 RABBITMQ_URL=amqp://app:app@rabbitmq:5672/%2F
-COORDINATOR_EMAIL=coordenador@faculdade
-EMAIL_FROM=relatorios@faculdade
+COORDINATOR_EMAIL=coordenador@faculdade.br
+EMAIL_FROM=relatorios@faculdade.br
 SMTP_HOST=mailpit
 SMTP_PORT=1025
 REPORT_TIMEZONE=America/Sao_Paulo
