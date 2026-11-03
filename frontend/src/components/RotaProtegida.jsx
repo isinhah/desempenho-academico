@@ -6,7 +6,7 @@ export function RotaProtegida({ children }) {
   const location = useLocation()
 
   if (carregando) {
-    return <main className="grid min-h-[calc(100vh-4px)] place-items-center text-sm text-slate-600">Verificando sessão...</main>
+    return <main className="grid min-h-[calc(100vh-4px)] place-items-center" aria-label="Verificando sessão" role="status"><span className="size-8 animate-spin rounded-full border-[3px] border-brand-100 border-t-brand-700" aria-hidden="true" /></main>
   }
 
   if (!usuario) return <Navigate to="/login" replace state={{ from: location }} />

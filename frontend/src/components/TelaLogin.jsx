@@ -31,7 +31,7 @@ export function TelaLogin() {
       <section className="w-full rounded-2xl border border-brand-100 bg-white p-7 shadow-sm sm:p-8" aria-labelledby="titulo-login">
         <p className="text-xs font-bold tracking-wide text-accent-700">PUCPR</p>
         <h1 id="titulo-login" className="mt-2 text-3xl font-bold tracking-tight text-ink">Acesse a análise de cursos</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">Entre com suas credenciais institucionais para consultar os indicadores disponíveis ao seu perfil.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Entre com suas credenciais para consultar os indicadores disponíveis.</p>
 
         {!configurado && (
           <div className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
