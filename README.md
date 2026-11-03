@@ -42,8 +42,8 @@ flowchart LR
 4. O frontend consome a API para exibir filtros, ranking, score, indicadores do período mais recente e gráfico de evasão.
 5. Uma pessoa administradora pode disparar o ETL pela rota protegida, usando um token mantido apenas no ambiente do backend.
 6. No primeiro dia de cada mês, o scheduler publica uma solicitação de relatório para o último mês concluído.
-7. O report worker calcula os cursos com maior melhora de score e os cursos em atenção, então entrega o e-mail ao notifier pelo RabbitMQ.
-8. O notifier envia o e-mail ao usuário (coordenador), ele pode ser visualizado no Mailpit.
+7. O report worker identifica os perfis ativos e monta um resumo institucional para cada decano ou um resumo dos cursos vinculados para cada coordenador.
+8. O notifier envia cada e-mail ao endereço cadastrado no Supabase Auth; eles podem ser visualizados no Mailpit.
 
 ## Modelo de dados
 
@@ -121,7 +121,6 @@ DATABASE_URL=postgresql+psycopg://postgres.PROJECT_REF:SUA_SENHA@HOST_DO_SESSION
 ADMIN_API_TOKEN=um-token-longo-e-aleatorio
 SUPABASE_URL=https://SEU_PROJECT_REF.supabase.co
 RABBITMQ_URL=amqp://app:app@rabbitmq:5672/%2F
-COORDINATOR_EMAIL=coordenador@faculdade.br
 EMAIL_FROM=relatorios@faculdade.br
 SMTP_HOST=mailpit
 SMTP_PORT=1025
@@ -217,7 +216,12 @@ Em seguida, recrie os serviços:
 docker compose up --build -d
 ```
 
-O report worker seleciona até cinco cursos que mais aumentaram o score em comparação com o mês anterior e até cinco cursos nas classes B ou D. O notifier envia o resumo para `COORDINATOR_EMAIL`.
+O report worker usa os perfis ativos vinculados ao Supabase Auth como destinatários:
+
+- Cada `DECANO` recebe um resumo institucional: cursos analisados, score médio, distribuição por classe, cinco melhorias e cinco cursos em atenção.
+- Cada `COORDENADOR_CURSO` recebe um único e-mail com o score, a classe, a evasão e as variações mensais de todos os seus cursos vinculados.
+
+O endereço de envio vem de `EMAIL_FROM`; o endereço de destino é o e-mail do usuário no Supabase Auth. Coordenadores sem curso vinculado não recebem e-mail e geram um aviso nos logs do worker.
 
 Depois do teste, retorne `REPORT_RUN_ON_STARTUP` para `false` para não publicar o relatório novamente em cada reinicialização do scheduler.
 
