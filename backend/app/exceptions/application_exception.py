@@ -15,3 +15,13 @@ class ResourceNotFoundException(ApplicationException):
 class DatabaseUnavailableException(ApplicationException):
     status_code = 503
     code = "banco_indisponivel"
+
+
+class AuthenticationException(ApplicationException):
+    status_code = 401
+    code = "nao_autenticado"
+
+
+class AuthorizationException(ApplicationException):
+    status_code = 403
+    code = "acesso_negado"

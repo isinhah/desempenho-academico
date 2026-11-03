@@ -8,7 +8,14 @@ import { TelaLogin } from './components/TelaLogin'
 const PaginaAnaliseCurso = lazy(() => import('./components/PaginaAnaliseCurso').then((module) => ({ default: module.PaginaAnaliseCurso })))
 
 function PaginaRanking() {
-  const { usuario, sair } = useAuth()
+  const { usuario, perfil, sair } = useAuth()
+
+  if (perfil?.papel === 'COORDENADOR_CURSO') {
+    const cursoId = perfil.cursos_ids[0]
+    if (cursoId) return <Navigate to={`/cursos/${cursoId}`} replace />
+
+    return <main className="mx-auto grid min-h-[calc(100vh-4px)] w-[calc(100%-2rem)] max-w-md place-items-center text-center max-sm:w-[calc(100%-1.5rem)]"><section className="rounded-2xl border border-amber-200 bg-white p-7 shadow-sm"><h1 className="text-xl font-bold text-ink">Curso não vinculado</h1><p className="mt-2 text-sm leading-6 text-slate-600">Seu perfil de coordenador ainda não está associado a um curso.</p><button type="button" onClick={() => sair()} className="mt-6 inline-flex h-10 items-center justify-center rounded-lg bg-brand-700 px-4 text-sm font-semibold text-white hover:bg-brand-800">Sair</button></section></main>
+  }
 
   return (
     <main className="mx-auto w-[calc(100%-2rem)] max-w-6xl py-12 pb-16 max-sm:w-[calc(100%-1.5rem)] max-sm:py-8">

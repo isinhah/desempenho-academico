@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from app.controllers.admin_controller import router as admin_router
+from app.controllers.autenticacao_controller import router as autenticacao_router
 from app.controllers.curso_controller import router as curso_router
 from app.controllers.escola_controller import router as escola_router
 from fastapi import FastAPI
@@ -34,6 +35,7 @@ register_exception_handlers(app)
 app.include_router(curso_router)
 app.include_router(escola_router)
 app.include_router(admin_router)
+app.include_router(autenticacao_router)
 
 
 @app.get("/")

@@ -1,24 +1,51 @@
 import { useEffect, useMemo, useState } from 'react'
+import { obterUsuarioAtual } from '../services/cursosApi'
 import { supabase, supabaseConfigurado } from '../services/supabase'
 import { AuthContext } from './context'
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [carregando, setCarregando] = useState(supabaseConfigurado)
+  const [perfil, setPerfil] = useState(null)
+  const [erroPerfil, setErroPerfil] = useState('')
 
   useEffect(() => {
     if (!supabase) return undefined
 
     let ativo = true
 
+    async function atualizarSessao(novaSessao) {
+      if (!ativo) return
+      setSession(novaSessao)
+      setErroPerfil('')
+
+      if (!novaSessao) {
+        setPerfil(null)
+        setCarregando(false)
+        return
+      }
+
+      setCarregando(true)
+      try {
+        const novoPerfil = await obterUsuarioAtual()
+        if (ativo) setPerfil(novoPerfil)
+      } catch (error) {
+        if (ativo) {
+          setPerfil(null)
+          setErroPerfil(error.message || 'Não foi possível carregar seu perfil de acesso.')
+        }
+      } finally {
+        if (ativo) setCarregando(false)
+      }
+    }
+
     supabase.auth.getSession().then(({ data, error }) => {
-      if (ativo && !error) setSession(data.session)
-      if (ativo) setCarregando(false)
+      if (!error) void atualizarSessao(data.session)
+      else if (ativo) setCarregando(false)
     })
 
     const { data: assinatura } = supabase.auth.onAuthStateChange((_evento, novaSessao) => {
-      setSession(novaSessao)
-      setCarregando(false)
+      void atualizarSessao(novaSessao)
     })
 
     return () => {
@@ -30,6 +57,8 @@ export function AuthProvider({ children }) {
   const valor = useMemo(() => ({
     session,
     usuario: session?.user ?? null,
+    perfil,
+    erroPerfil,
     carregando,
     configurado: supabaseConfigurado,
     async entrar(email, senha) {
@@ -42,7 +71,7 @@ export function AuthProvider({ children }) {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
     },
-  }), [carregando, session])
+  }), [carregando, erroPerfil, perfil, session])
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>
 }

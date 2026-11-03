@@ -53,6 +53,8 @@ flowchart LR
 | `escola` | Cadastro analítico das escolas. |
 | `curso` | Estado mais recente de alunos ativos e evadidos por curso. |
 | `historico_indicador` | Percentual de evasão por curso e mês. |
+| `perfil_usuario` | Papel e situação de acesso de cada usuário autenticado. |
+| `usuario_curso` | Cursos que cada coordenador pode consultar. |
 
 ### Cálculo de evasão
 
@@ -80,6 +82,7 @@ O score consolidado vai de 0 a 100 e combina uma dimensão financeira com peso d
 | --- | --- | --- |
 | `GET` | `/` | Confirma que a API está no ar. |
 | `GET` | `/health/database` | Verifica a conexão da API com o Supabase. |
+| `GET` | `/autenticacao/me` | Retorna o perfil e os cursos permitidos ao usuário autenticado. |
 | `GET` | `/escolas` | Lista escolas disponíveis no filtro. |
 | `GET` | `/cursos` | Retorna o ranking, ordenado por score. |
 | `GET` | `/cursos?escola_id={id}` | Retorna o ranking filtrado por escola. |
@@ -116,6 +119,7 @@ Edite `backend/.env` com a URL do **Session pooler** obtida no painel do Supabas
 ```env
 DATABASE_URL=postgresql+psycopg://postgres.PROJECT_REF:SUA_SENHA@HOST_DO_SESSION_POOLER:5432/postgres?sslmode=require
 ADMIN_API_TOKEN=um-token-longo-e-aleatorio
+SUPABASE_URL=https://SEU_PROJECT_REF.supabase.co
 RABBITMQ_URL=amqp://app:app@rabbitmq:5672/%2F
 COORDINATOR_EMAIL=coordenador@faculdade.br
 EMAIL_FROM=relatorios@faculdade.br
@@ -128,6 +132,21 @@ REPORT_RUN_ON_STARTUP=false
 ```
 
 > Nunca envie o arquivo `backend/.env` ou o token para o Git.
+
+### Autenticação e autorização
+
+Execute também o conteúdo de [`backend/migrations/002_perfis_e_acessos.sql`](backend/migrations/002_perfis_e_acessos.sql) no SQL Editor do Supabase. Em seguida, crie os usuários em **Authentication → Users** no painel do Supabase e associe cada um a um perfil em `perfil_usuario`.
+
+- `DECANO`: consulta ranking, escolas e todos os cursos.
+- `COORDENADOR_CURSO`: consulta somente os cursos presentes em `usuario_curso`.
+
+No frontend, crie `frontend/.env` a partir do exemplo e informe a URL do projeto e a chave `anon`/`publishable` em **Project Settings → API**:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+> A chave `service_role` nunca deve ser usada no frontend.
 
 ### Integridade do banco
 

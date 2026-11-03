@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { listarCursos } from '../services/cursosApi'
 
-export function useRankingCursos(escolaId) {
+export function useRankingCursos(escolaId, habilitado = true) {
   const [cursos, setCursos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -9,6 +9,8 @@ export function useRankingCursos(escolaId) {
   const recarregar = useCallback(() => setReloadKey((key) => key + 1), [])
 
   useEffect(() => {
+    if (!habilitado) return undefined
+
     const controller = new AbortController()
     async function carregarCursos() {
       setLoading(true)
@@ -24,7 +26,7 @@ export function useRankingCursos(escolaId) {
     }
     carregarCursos()
     return () => controller.abort()
-  }, [escolaId, reloadKey])
+  }, [escolaId, habilitado, reloadKey])
 
   return { cursos, loading, error, recarregar }
 }

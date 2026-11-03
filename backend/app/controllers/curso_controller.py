@@ -2,12 +2,18 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.auth import obter_usuario_autenticado
 from app.dtos.curso_dto import (
     CursoDetalheResponse,
     HistoricoIndicadorResponse,
     CursoResponse,
 )
 from app.services.curso_service import CursoService
+from app.services.autorizacao_service import (
+    UsuarioAutenticado,
+    exigir_acesso_ao_curso,
+    exigir_visao_geral,
+)
 
 router = APIRouter(prefix="/cursos", tags=["Cursos"])
 
@@ -15,15 +21,27 @@ router = APIRouter(prefix="/cursos", tags=["Cursos"])
 def listar_cursos(
     escola_id: int | None = Query(default=None, gt=0),
     db: Session = Depends(get_db),
+    usuario: UsuarioAutenticado = Depends(obter_usuario_autenticado),
 ):
+    exigir_visao_geral(usuario)
     return CursoService(db).listar_cursos_com_score(escola_id=escola_id)
 
 
 @router.get("/{curso_id}", response_model=CursoDetalheResponse)
-def obter_curso(curso_id: int, db: Session = Depends(get_db)):
+def obter_curso(
+    curso_id: int,
+    db: Session = Depends(get_db),
+    usuario: UsuarioAutenticado = Depends(obter_usuario_autenticado),
+):
+    exigir_acesso_ao_curso(usuario, curso_id)
     return CursoService(db).obter_curso(curso_id)
 
 
 @router.get("/{curso_id}/historico", response_model=list[HistoricoIndicadorResponse])
-def listar_historico_curso(curso_id: int, db: Session = Depends(get_db)):
+def listar_historico_curso(
+    curso_id: int,
+    db: Session = Depends(get_db),
+    usuario: UsuarioAutenticado = Depends(obter_usuario_autenticado),
+):
+    exigir_acesso_ao_curso(usuario, curso_id)
     return CursoService(db).listar_historico(curso_id)
