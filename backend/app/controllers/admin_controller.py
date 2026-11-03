@@ -3,7 +3,12 @@ import secrets
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
+from app.domain.importacao_csv import processar_importacao_storage
 from app.domain.sincronizar_dados_cursos import executar_etl
+from app.dtos.importacao_dto import (
+    ImportacaoProcessadaResponse,
+    ProcessarImportacaoRequest,
+)
 
 router = APIRouter(prefix="/administracao", tags=["Administração"])
 
@@ -33,3 +38,24 @@ def sincronizar_dados(_: None = Depends(validar_token_admin)) -> dict[str, str |
         "mensagem": "Dados sincronizados com sucesso.",
         "registros_sincronizados": registros_sincronizados,
     }
+
+
+@router.post(
+    "/importacoes/processar",
+    response_model=ImportacaoProcessadaResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def processar_importacao(
+    dados: ProcessarImportacaoRequest,
+    _: None = Depends(validar_token_admin),
+) -> ImportacaoProcessadaResponse:
+    resultado = processar_importacao_storage(dados.caminho_storage)
+    return ImportacaoProcessadaResponse(
+        importacao_id=resultado.importacao_id,
+        caminho_storage=resultado.caminho_storage,
+        mes_referencia=resultado.mes_referencia,
+        linhas_lidas=resultado.linhas_lidas,
+        linhas_importadas=resultado.linhas_importadas,
+        registros_sincronizados=resultado.registros_sincronizados,
+        status=resultado.status,
+    )

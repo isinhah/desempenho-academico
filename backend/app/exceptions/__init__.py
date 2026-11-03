@@ -3,7 +3,10 @@ from app.exceptions.application_exception import (
     AuthenticationException,
     AuthorizationException,
     DatabaseUnavailableException,
+    ImportacaoDuplicadaException,
+    ImportacaoInvalidaException,
     ResourceNotFoundException,
+    StorageUnavailableException,
 )
 
 __all__ = [
@@ -11,5 +14,8 @@ __all__ = [
     "AuthenticationException",
     "AuthorizationException",
     "DatabaseUnavailableException",
+    "ImportacaoDuplicadaException",
+    "ImportacaoInvalidaException",
     "ResourceNotFoundException",
+    "StorageUnavailableException",
 ]

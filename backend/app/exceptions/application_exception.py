@@ -25,3 +25,18 @@ class AuthenticationException(ApplicationException):
 class AuthorizationException(ApplicationException):
     status_code = 403
     code = "acesso_negado"
+
+
+class ImportacaoInvalidaException(ApplicationException):
+    status_code = 422
+    code = "importacao_invalida"
+
+
+class ImportacaoDuplicadaException(ApplicationException):
+    status_code = 409
+    code = "importacao_duplicada"
+
+
+class StorageUnavailableException(ApplicationException):
+    status_code = 502
+    code = "storage_indisponivel"
