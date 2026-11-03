@@ -30,7 +30,7 @@ export function TelaLogin() {
     <main className="mx-auto flex min-h-[calc(100vh-4px)] w-[calc(100%-2rem)] max-w-md items-center py-10 max-sm:w-[calc(100%-1.5rem)]">
       <section className="w-full rounded-2xl border border-brand-100 bg-white p-7 shadow-sm sm:p-8" aria-labelledby="titulo-login">
         <p className="text-xs font-bold tracking-wide text-brand-700">PUCPR</p>
-        <h1 id="titulo-login" className="mt-2 text-3xl font-bold tracking-tight text-ink">Acesse a análise de cursos</h1>
+        <h1 id="titulo-login" className="mt-2 text-3xl font-bold tracking-tight text-ink">Acesse a análise acadêmica dos cursos</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">Entre com suas credenciais para consultar os indicadores disponíveis.</p>
 
         {!configurado && (
@@ -68,7 +68,7 @@ export function TelaLogin() {
 
           {erro && <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800" role="alert">{erro}</p>}
 
-          <button
+          <button style={{ cursor: 'pointer' }}
             type="submit"
             disabled={!configurado || enviando}
             className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-brand-700 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"

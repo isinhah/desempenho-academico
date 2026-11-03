@@ -30,7 +30,7 @@ async def lifespan(_: FastAPI):
     engine.dispose()
 
 
-app = FastAPI(title="Mini Portfólio API", lifespan=lifespan)
+app = FastAPI(title="API de desempenho acadêmico e evasão", lifespan=lifespan)
 register_exception_handlers(app)
 app.include_router(curso_router)
 app.include_router(escola_router)

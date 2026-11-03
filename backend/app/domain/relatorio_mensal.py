@@ -190,9 +190,9 @@ def montar_email_decano(nome: str, relatorio: RelatorioDecano) -> dict[str, str]
     )
     score_medio = _formatar_score(relatorio.score_medio) if relatorio.score_medio is not None else "—"
     return {
-        "assunto": f"Resumo mensal institucional — {periodo}",
+        "assunto": f"Resumo mensal acadêmico institucional — {periodo}",
         "html": (
-            f"<h1>Resumo mensal institucional</h1><p>Olá, {escape(nome)}.</p>"
+            f"<h1>Resumo mensal acadêmico institucional</h1><p>Olá, {escape(nome)}.</p>"
             f"<p>Referência: {periodo}.</p><h2>Resumo</h2><ul>"
             f"<li>Cursos analisados: {relatorio.total_cursos}</li>"
             f"<li>Score médio: {score_medio}</li><li>{distribuicao}</li></ul>"
@@ -201,7 +201,7 @@ def montar_email_decano(nome: str, relatorio: RelatorioDecano) -> dict[str, str]
             "<p>Acesse o dashboard para comparar cursos e escolas.</p>"
         ),
         "texto": (
-            f"Resumo mensal institucional — {periodo}\n\nOlá, {nome}.\n\n"
+            f"Resumo mensal acadêmico institucional — {periodo}\n\nOlá, {nome}.\n\n"
             f"Cursos analisados: {relatorio.total_cursos}\nScore médio: {score_medio}\n{distribuicao}\n\n"
             f"Destaques positivos\n{_lista_texto(relatorio.cursos_que_subiram, 'melhoria')}\n\n"
             f"Cursos em atenção\n{_lista_texto(relatorio.cursos_em_atencao, 'atencao')}\n\n"
@@ -249,14 +249,14 @@ def montar_email_coordenador(nome: str, resumo: ResumoCoordenador) -> dict[str, 
         secoes_html = "<p>Não há indicadores consolidados para os seus cursos neste período.</p>"
         secoes_texto = "Não há indicadores consolidados para os seus cursos neste período."
     return {
-        "assunto": f"Resumo mensal dos seus cursos — {periodo}",
+        "assunto": f"Resumo mensal acadêmico dos seus cursos — {periodo}",
         "html": (
-            f"<h1>Resumo mensal dos seus cursos</h1><p>Olá, {escape(nome)}.</p>"
+            f"<h1>Resumo mensal acadêmico dos seus cursos</h1><p>Olá, {escape(nome)}.</p>"
             f"<p>Referência: {periodo}.</p>{secoes_html}"
             "<p>Acesse o dashboard para acompanhar o histórico completo.</p>"
         ),
         "texto": (
-            f"Resumo mensal dos seus cursos — {periodo}\n\nOlá, {nome}.\n\n{secoes_texto}\n\n"
+            f"Resumo mensal acadêmico dos seus cursos — {periodo}\n\nOlá, {nome}.\n\n{secoes_texto}\n\n"
             "Acesse o dashboard para acompanhar o histórico completo."
         ),
     }

@@ -1,6 +1,6 @@
-# Ranking de desempenho de cursos
+# Desempenho acadêmico e evasão dos cursos
 
-Projeto educacional para análise de desempenho de cursos de uma faculdade. A aplicação apresenta um ranking de cursos, permite filtrar por escola e classe, e detalha score, evasão e evolução histórica de cada curso.
+Projeto educacional para análise de desempenho acadêmico e evasão de cursos de uma faculdade. A aplicação apresenta um ranking acadêmico, permite filtrar por escola e classe, e detalha score, evasão e evolução histórica de cada curso.
 
 ## Objetivo
 
@@ -66,7 +66,7 @@ O ETL rejeita registros sem escola, curso ou mês de referência, bem como núme
 
 ### Score e classes
 
-O score consolidado vai de 0 a 100 e combina uma dimensão financeira com peso de 55% e uma dimensão acadêmica com peso de 45%. A dimensão acadêmica é reduzida conforme a evasão aumenta.
+No estado atual do projeto, a evasão é o único indicador acadêmico alimentado por dados. O score de 0 a 100 é uma regra didática: combina uma base financeira fixa de 55% com uma dimensão acadêmica de 45%, reduzida conforme a evasão aumenta. As dimensões de mercado, finanças e qualidade ainda não são exibidas como indicadores, pois não possuem dados de origem.
 
 | Classe | Score |
 | --- | --- |
