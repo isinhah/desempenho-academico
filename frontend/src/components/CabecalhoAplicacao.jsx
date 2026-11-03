@@ -13,7 +13,7 @@ export function CabecalhoAplicacao() {
     <header className="border-b border-brand-100 bg-white">
       <div className="mx-auto flex w-[calc(100%-2rem)] max-w-6xl items-center justify-between gap-4 py-3 max-sm:w-[calc(100%-1.5rem)]">
         <div>
-          <p className="text-xs font-bold tracking-wide text-accent-700">PUCPR</p>
+          <p className="text-xs font-bold tracking-wide text-brand-700">PUCPR</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden text-right sm:block">

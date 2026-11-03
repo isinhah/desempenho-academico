@@ -29,7 +29,7 @@ export function TelaLogin() {
   return (
     <main className="mx-auto flex min-h-[calc(100vh-4px)] w-[calc(100%-2rem)] max-w-md items-center py-10 max-sm:w-[calc(100%-1.5rem)]">
       <section className="w-full rounded-2xl border border-brand-100 bg-white p-7 shadow-sm sm:p-8" aria-labelledby="titulo-login">
-        <p className="text-xs font-bold tracking-wide text-accent-700">PUCPR</p>
+        <p className="text-xs font-bold tracking-wide text-brand-700">PUCPR</p>
         <h1 id="titulo-login" className="mt-2 text-3xl font-bold tracking-tight text-ink">Acesse a análise de cursos</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">Entre com suas credenciais para consultar os indicadores disponíveis.</p>
 
