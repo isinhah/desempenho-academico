@@ -3,14 +3,24 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 
 export function TelaLogin() {
-  const { usuario, configurado, entrar } = useAuth()
+  const { usuario, perfil, carregando, configurado, entrar } = useAuth()
   const location = useLocation()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
 
-  if (usuario) return <Navigate to={location.state?.from?.pathname || '/'} replace />
+  if (usuario && carregando) {
+    return <main className="grid min-h-[calc(100vh-4px)] place-items-center" aria-label="Verificando sessão" role="status"><span className="size-8 animate-spin rounded-full border-[3px] border-brand-100 border-t-brand-700" aria-hidden="true" /></main>
+  }
+
+  if (usuario) {
+    const destino = perfil?.papel === 'DECANO'
+      ? '/'
+      : location.state?.from?.pathname || '/'
+
+    return <Navigate to={destino} replace />
+  }
 
   async function enviar(event) {
     event.preventDefault()

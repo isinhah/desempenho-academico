@@ -4,7 +4,7 @@ Projeto educacional para análise de desempenho acadêmico e evasão de cursos d
 
 ## Objetivo
 
-Uma aplicaçaõ com uma fonte de dados no Supabase, um processo de ETL para validar e consolidar os indicadores, uma API FastAPI somente de leitura e um dashboard React para exploração dos resultados.
+Uma aplicação com uma fonte de dados no Supabase, um processo de ETL para validar e consolidar os indicadores, uma API FastAPI somente de leitura e um dashboard React para exploração dos resultados.
 
 ## Tecnologias
 

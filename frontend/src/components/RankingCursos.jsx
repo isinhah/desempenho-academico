@@ -8,6 +8,10 @@ function formatarScore(score) {
   return Number(score).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function normalizarTexto(valor) {
+  return String(valor).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR')
+}
+
 function ResumoRanking({ cursos }) {
   const resumo = useMemo(() => ({
     scoreMedio: cursos.reduce((total, curso) => total + Number(curso.score), 0) / cursos.length,
@@ -26,11 +30,16 @@ function ResumoRanking({ cursos }) {
 export function RankingCursos() {
   const [escolaId, setEscolaId] = useState('')
   const [classeSelecionada, setClasseSelecionada] = useState('')
+  const [busca, setBusca] = useState('')
   const navigate = useNavigate()
   const { escolas, loading: escolasLoading, error: escolasError } = useEscolas()
   const { cursos, loading, error, recarregar } = useRankingCursos(escolaId)
   const pronto = !loading && !error
-  const cursosVisiveis = classeSelecionada ? cursos.filter((curso) => curso.classe === classeSelecionada) : cursos
+  const termoBusca = normalizarTexto(busca.trim())
+  const cursosPorClasse = classeSelecionada ? cursos.filter((curso) => curso.classe === classeSelecionada) : cursos
+  const cursosVisiveis = termoBusca
+    ? cursosPorClasse.filter((curso) => normalizarTexto(curso.nome).includes(termoBusca))
+    : cursosPorClasse
   const classesDisponiveis = ['A', 'B', 'D'].filter((classe) => cursos.some((curso) => curso.classe === classe))
   const filtros = [
     { value: '', label: 'Todos', count: cursos.length },
@@ -42,7 +51,10 @@ export function RankingCursos() {
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="ranking-title">
       <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 lg:flex-row lg:items-end lg:justify-between">
         <div><h2 id="ranking-title" className="text-xl font-bold tracking-tight text-slate-900">Ranking de cursos</h2>{pronto && <p className="mt-0.5 text-sm text-slate-600">{cursosVisiveis.length} curso(s) encontrado(s)</p>}</div>
-        <div className="flex flex-col gap-3 lg:items-end"><FilterTabs options={filtros} value={classeSelecionada} onChange={setClasseSelecionada} /><label className="grid gap-1 text-xs font-semibold text-slate-600"><span>Escola</span><select className="h-10 min-w-48 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/30 disabled:cursor-not-allowed disabled:bg-slate-50" value={escolaId} onChange={(event) => setEscolaId(event.target.value)} disabled={escolasLoading || Boolean(escolasError)}><option value="">Todas as escolas</option>{escolas.map((escola) => <option key={escola.id} value={escola.id}>{escola.nome}</option>)}</select></label></div>
+        <div className="flex flex-col gap-3 lg:items-end">
+          <label className="grid gap-1 text-xs font-semibold text-slate-600"><span>Buscar curso</span><input type="search" value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Digite o nome do curso" className="h-10 min-w-64 rounded-lg border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30" /></label>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end"><FilterTabs options={filtros} value={classeSelecionada} onChange={setClasseSelecionada} /><label className="grid gap-1 text-xs font-semibold text-slate-600"><span>Escola</span><select className="h-10 min-w-48 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/30 disabled:cursor-not-allowed disabled:bg-slate-50" value={escolaId} onChange={(event) => setEscolaId(event.target.value)} disabled={escolasLoading || Boolean(escolasError)}><option value="">Todas as escolas</option>{escolas.map((escola) => <option key={escola.id} value={escola.id}>{escola.nome}</option>)}</select></label></div>
+        </div>
       </div>
       {escolasError && <p className="m-0 bg-rose-50 px-5 py-3 text-sm text-rose-800" role="alert">O filtro de escolas não pôde ser carregado.</p>}
       {loading && <div className="grid min-h-57.5 place-items-center p-6 text-center text-slate-500" role="status"><div><div className="mx-auto mb-3 size-8 animate-spin rounded-full border-[3px] border-brand-100 border-t-brand-600" aria-hidden="true" /><p>Carregando ranking de cursos...</p></div></div>}
