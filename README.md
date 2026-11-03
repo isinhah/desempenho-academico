@@ -21,11 +21,13 @@ Uma aplicaçaõ com uma fonte de dados no Supabase, um processo de ETL para vali
 flowchart LR
     frontend[Frontend<br/>React + Vite] --> api[API<br/>FastAPI]
     api --> supabase[(Supabase<br/>PostgreSQL)]
-    fonte["cursos<br/>fonte oficial"] --> etl["ETL<br/>sincronizar_dados_cursos"]
+    storage["Supabase Storage<br/>CSVs mensais"] --> importacao["Importação<br/>validar e registrar"]
+    importacao --> bruto["curso_indicador_bruto"]
+    bruto --> etl["ETL<br/>sincronizar_dados_cursos"]
     etl --> analiticas["escola, curso e<br/>historico_indicador"]
     analiticas --> api
-    admin["Administrador"] --> endpoint["POST /administracao/<br/>sincronizar-dados"]
-    endpoint --> etl
+    admin["Administrador"] --> endpoint["POST /administracao/importacoes/processar"]
+    endpoint --> importacao
     scheduler[Scheduler] -->|report.generate| rabbit[RabbitMQ]
     rabbit -->|report.generate| worker[Report worker]
     worker --> analiticas
@@ -36,20 +38,22 @@ flowchart LR
 
 ## Fluxo dos dados
 
-1. A tabela `cursos` do Supabase é a fonte oficial e contém os dados brutos por curso e mês.
-2. O ETL valida os registros, calcula o percentual de evasão, atualiza as tabelas analíticas e grava um resumo acadêmico determinístico por curso.
-3. A API consulta somente as tabelas analíticas para montar o ranking e o histórico.
-4. O frontend consome a API para exibir filtros, ranking, score, indicadores do período mais recente e gráfico de evasão.
-5. Uma pessoa administradora pode disparar o ETL pela rota protegida, usando um token mantido apenas no ambiente do backend.
-6. No primeiro dia de cada mês, o scheduler publica uma solicitação de relatório para o último mês concluído.
-7. O report worker identifica os perfis ativos e monta um resumo institucional para cada decano ou um resumo dos cursos vinculados para cada coordenador.
-8. O notifier envia cada e-mail ao endereço cadastrado no Supabase Auth; eles podem ser visualizados no Mailpit.
+1. Um CSV por mês é enviado ao bucket privado `importacoes-cursos` do Supabase Storage.
+2. O endpoint administrativo baixa, valida e registra as 72 linhas do arquivo em `curso_indicador_bruto`, com rastreabilidade em `importacao_arquivo`.
+3. O ETL processa somente a importação registrada, calcula o percentual de evasão, atualiza as tabelas analíticas e grava um resumo acadêmico determinístico por curso.
+4. A API consulta somente as tabelas analíticas para montar o ranking e o histórico.
+5. O frontend consome a API para exibir filtros, ranking, score, indicadores do período mais recente e gráfico de evasão.
+6. Uma pessoa administradora pode processar um CSV pela rota protegida, usando um token mantido apenas no ambiente do backend.
+7. No primeiro dia de cada mês, o scheduler publica uma solicitação de relatório para o último mês concluído.
+8. O report worker identifica os perfis ativos e monta um resumo institucional para cada decano ou um resumo dos cursos vinculados para cada coordenador.
+9. O notifier envia cada e-mail ao endereço cadastrado no Supabase Auth; eles podem ser visualizados no Mailpit.
 
 ## Modelo de dados
 
 | Tabela | Papel |
 | --- | --- |
-| `cursos` | Fonte oficial no Supabase: escola, curso, alunos ativos, alunos evadidos e mês de referência. |
+| `importacao_arquivo` | Rastreia cada CSV enviado ao Storage, seu mês e o resultado do processamento. |
+| `curso_indicador_bruto` | Fonte bruta oficial por curso e mês, originada nos CSVs mensais. |
 | `escola` | Cadastro analítico das escolas. |
 | `curso` | Estado mais recente de alunos, resumo acadêmico e data de referência por curso. |
 | `historico_indicador` | Percentual de evasão por curso e mês. |
@@ -92,7 +96,7 @@ No estado atual do projeto, a evasão é o único indicador acadêmico alimentad
 | `GET` | `/cursos?escola_id={id}` | Retorna o ranking filtrado por escola. |
 | `GET` | `/cursos/{id}` | Retorna os indicadores atuais de um curso. |
 | `GET` | `/cursos/{id}/historico` | Retorna a evolução mensal da evasão. |
-| `POST` | `/administracao/sincronizar-dados` | Executa o ETL; exige o cabeçalho `X-Admin-Token`. |
+| `POST` | `/administracao/importacoes/processar` | Valida e processa um CSV mensal do Storage; exige `X-Admin-Token`. |
 
 A documentação interativa está disponível em [http://localhost:8000/docs](http://localhost:8000/docs).
 
@@ -124,6 +128,8 @@ Edite `backend/.env` com a URL do **Session pooler** obtida no painel do Supabas
 DATABASE_URL=postgresql+psycopg://postgres.PROJECT_REF:SUA_SENHA@HOST_DO_SESSION_POOLER:5432/postgres?sslmode=require
 ADMIN_API_TOKEN=um-token-longo-e-aleatorio
 SUPABASE_URL=https://SEU_PROJECT_REF.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=SUA_CHAVE_SECRETA_DO_SUPABASE
+SUPABASE_STORAGE_BUCKET=importacoes-cursos
 RABBITMQ_URL=amqp://app:app@rabbitmq:5672/%2F
 EMAIL_FROM=relatorios@faculdade.br
 SMTP_HOST=mailpit
@@ -134,7 +140,7 @@ REPORT_SCHEDULE_HOUR=8
 REPORT_RUN_ON_STARTUP=false
 ```
 
-> Nunca envie o arquivo `backend/.env` ou o token para o Git.
+> A chave secreta/service_role é usada somente pelo backend para acessar o bucket privado. Nunca envie `backend/.env`, o token administrativo ou essa chave ao Git; ela nunca deve ser usada no frontend.
 
 ### Autenticação e autorização
 
@@ -158,6 +164,7 @@ Antes da primeira sincronização, copie o **conteúdo** das migrations e execut
 1. [`backend/migrations/001_integridade_dados_analiticos.sql`](backend/migrations/001_integridade_dados_analiticos.sql): restrições contra duplicidade.
 2. [`backend/migrations/002_perfis_e_acessos.sql`](backend/migrations/002_perfis_e_acessos.sql): perfis de acesso e vínculos de coordenadores.
 3. [`backend/migrations/003_resumo_academico_curso.sql`](backend/migrations/003_resumo_academico_curso.sql): campos do resumo automático.
+4. [`backend/migrations/004_importacoes_csv.sql`](backend/migrations/004_importacoes_csv.sql): controle de CSVs mensais e dados brutos importados.
 
 ## Comandos
 
@@ -184,29 +191,57 @@ npm run dev
 
 Abra o frontend em [http://localhost:5173](http://localhost:5173).
 
-### Sincronizar dados e calcular evasão
+### Processar um CSV mensal do Supabase Storage
 
-Após cadastrar ou atualizar registros na tabela `cursos` do Supabase, execute o ETL pela rota administrativa:
+Crie no painel do Supabase um bucket **privado** chamado `importacoes-cursos`. Envie para ele um arquivo no formato `cursos_YYYY-MM.csv`, com os cabeçalhos abaixo e exatamente 72 linhas de dados:
+
+```text
+escola,curso,alunos_ativos,alunos_evadidos,mes_referencia
+```
+
+Depois, processe somente o arquivo enviado. O `caminho_storage` é o caminho dentro do bucket; neste exemplo, o arquivo está na raiz:
 
 ```bash
-curl -X POST http://localhost:8000/administracao/sincronizar-dados \
-  -H "X-Admin-Token: SEU_TOKEN"
+curl -X POST http://localhost:8000/administracao/importacoes/processar \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Token: SEU_TOKEN" \
+  -d '{"caminho_storage":"cursos_2026-10.csv"}'
 ```
 
 Exemplo de resposta:
 
 ```json
 {
-  "mensagem": "Dados sincronizados com sucesso.",
-  "registros_sincronizados": 864
+  "importacao_id": 1,
+  "caminho_storage": "cursos_2026-10.csv",
+  "mes_referencia": "2026-10-01",
+  "linhas_lidas": 72,
+  "linhas_importadas": 72,
+  "registros_sincronizados": 72,
+  "status": "CONCLUIDA"
 }
 ```
 
-Como alternativa para desenvolvimento local, execute o módulo dentro do container:
+O mesmo caminho não pode ser processado duas vezes; para uma correção, envie o CSV para um novo caminho, por exemplo `correcoes/cursos_2026-10_v2.csv`. O nome final do arquivo continua precisando seguir `cursos_YYYY-MM.csv`.
+
+### Preparar CSVs mensais locais
+
+Para validar a base histórica sintética e separá-la em um arquivo por competência, execute:
 
 ```bash
-docker compose exec api python -m app.domain.sincronizar_dados_cursos
+python3 backend/scripts/separar_csvs_mensais.py
 ```
+
+O script lê `backend/data/cursos_historico_mensal.csv`, exige 864 linhas (72 cursos em 12 meses) e gera os arquivos em `backend/data/entrada/`, como `cursos_2026-10.csv`. Ele não envia dados ao Supabase.
+
+Para usar outro arquivo de origem, informe o caminho explicitamente:
+
+```bash
+python3 backend/scripts/separar_csvs_mensais.py \
+  --arquivo backend/data/cursos_historico_2025-11_a_2026-10.csv
+```
+
+Por segurança, o script não substitui CSVs mensais já existentes. Use `--sobrescrever` apenas quando quiser recriá-los.
 
 ### Relatório mensal automático
 
@@ -260,6 +295,4 @@ docker compose down
 
 ## Persistência
 
-Os dados são persistidos no PostgreSQL do Supabase, e não em um volume Docker local.
-
-A tabela `cursos` continua sendo a origem dos dados; execute a sincronização sempre que os dados dela forem inseridos ou atualizados.
+Os dados analíticos e o controle das importações são persistidos no PostgreSQL do Supabase, e os CSVs de entrada ficam no Supabase Storage; não há volume Docker local para esses dados.

@@ -6,10 +6,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.database import engine
 from app.domain.resumo_academico import gerar_resumo_academico
 
+
 def calcular_pct_evasao(alunos_ativos: int, alunos_evadidos: int) -> float:
-    if alunos_ativos == 0:
-        return 0.0
-    return round((alunos_evadidos / alunos_ativos) * 100, 2)
+    return 0.0 if alunos_ativos == 0 else round((alunos_evadidos / alunos_ativos) * 100, 2)
 
 
 def _validar_registro(registro: dict) -> dict:
@@ -39,22 +38,13 @@ def _validar_registro(registro: dict) -> dict:
     }
 
 
-def executar_etl() -> int:
+def _sincronizar_registros(registros: list[dict]) -> int:
+    if not registros:
+        print("Nenhum registro encontrado para sincronizar.")
+        return 0
+
     try:
         with engine.begin() as conexao:
-            print("Lendo dados da tabela cursos...", flush=True)
-            origem = conexao.execute(
-                text(
-                    "SELECT escola, curso, alunos_ativos, alunos_evadidos, mes_referencia "
-                    "FROM cursos ORDER BY escola, curso, mes_referencia"
-                )
-            ).mappings()
-            registros = [_validar_registro(dict(registro)) for registro in origem]
-
-            if not registros:
-                print("Nenhum registro encontrado na tabela cursos.")
-                return 0
-
             print(f"Validando e sincronizando {len(registros)} registros...", flush=True)
             escolas_existentes = {
                 escola["nome"]: escola["id"]
@@ -62,9 +52,7 @@ def executar_etl() -> int:
             }
             nomes_escolas = {registro["escola"] for registro in registros}
             escolas_novas = [
-                {"nome": nome}
-                for nome in nomes_escolas
-                if nome not in escolas_existentes
+                {"nome": nome} for nome in nomes_escolas if nome not in escolas_existentes
             ]
             if escolas_novas:
                 conexao.execute(text("INSERT INTO escola (nome) VALUES (:nome)"), escolas_novas)
@@ -79,7 +67,7 @@ def executar_etl() -> int:
                     text("SELECT id, escola_id, nome FROM curso")
                 ).mappings()
             }
-            dados_atuais = {}
+            dados_atuais: dict[tuple[int, str], dict] = {}
             for registro in registros:
                 chave = (escolas_existentes[registro["escola"]], registro["curso"])
                 dados_atuais[chave] = registro
@@ -109,20 +97,19 @@ def executar_etl() -> int:
                     ).mappings()
                 }
 
-            cursos_atualizados = [
-                {
-                    "curso_id": cursos_por_chave[chave],
-                    "alunos_ativos": registro["alunos_ativos"],
-                    "alunos_evadidos": registro["alunos_evadidos"],
-                }
-                for chave, registro in dados_atuais.items()
-            ]
             conexao.execute(
                 text(
                     "UPDATE curso SET alunos_ativos = :alunos_ativos, "
                     "alunos_evadidos = :alunos_evadidos WHERE id = :curso_id"
                 ),
-                cursos_atualizados,
+                [
+                    {
+                        "curso_id": cursos_por_chave[chave],
+                        "alunos_ativos": registro["alunos_ativos"],
+                        "alunos_evadidos": registro["alunos_evadidos"],
+                    }
+                    for chave, registro in dados_atuais.items()
+                ],
             )
 
             historicos_existentes = {
@@ -174,7 +161,7 @@ def executar_etl() -> int:
                 )
 
             print("Atualizando resumos acadêmicos dos cursos...", flush=True)
-            cursos_sincronizados = set(cursos_por_chave.values())
+            cursos_sincronizados = set(cursos_por_chave[chave] for chave in dados_atuais)
             historicos_por_curso = {curso_id: [] for curso_id in cursos_sincronizados}
             for historico in conexao.execute(
                 text(
@@ -187,17 +174,15 @@ def executar_etl() -> int:
                         (historico["mes_referencia"], float(historico["pct_evasao"]))
                     )
 
-            resumos = []
-            for curso_id, historico in historicos_por_curso.items():
-                if not historico:
-                    continue
-                resumos.append(
-                    {
-                        "curso_id": curso_id,
-                        "resumo_academico": gerar_resumo_academico(historico),
-                        "resumo_referencia": historico[-1][0],
-                    }
-                )
+            resumos = [
+                {
+                    "curso_id": curso_id,
+                    "resumo_academico": gerar_resumo_academico(historico),
+                    "resumo_referencia": historico[-1][0],
+                }
+                for curso_id, historico in historicos_por_curso.items()
+                if historico
+            ]
             if resumos:
                 conexao.execute(
                     text(
@@ -210,13 +195,29 @@ def executar_etl() -> int:
                 )
     except SQLAlchemyError as error:
         raise RuntimeError(
-            "Não foi possível ler ou sincronizar a tabela cursos. "
-            "Confirme a conexão e a estrutura da tabela no Supabase."
+            "Não foi possível sincronizar os dados. Confirme a conexão e a estrutura do banco."
         ) from error
 
     print(f"ETL concluído: {len(registros)} registro(s) sincronizado(s).")
     return len(registros)
 
 
-if __name__ == "__main__":
-    executar_etl()
+def _ler_registros_importacao(importacao_id: int) -> list[dict]:
+    with engine.connect() as conexao:
+        return [
+            _validar_registro(dict(registro))
+            for registro in conexao.execute(
+                text(
+                    "SELECT escola, curso, alunos_ativos, alunos_evadidos, mes_referencia "
+                    "FROM curso_indicador_bruto WHERE importacao_id = :importacao_id "
+                    "ORDER BY escola, curso"
+                ),
+                {"importacao_id": importacao_id},
+            ).mappings()
+        ]
+
+
+def executar_etl_importacao(importacao_id: int) -> int:
+    print(f"Lendo dados da importação {importacao_id}...", flush=True)
+    registros = _ler_registros_importacao(importacao_id)
+    return _sincronizar_registros(registros)

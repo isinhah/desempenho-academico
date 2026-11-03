@@ -2,7 +2,7 @@ import { useAuth } from '../auth/useAuth'
 
 const rotulosPapel = {
   DECANO: 'Decano',
-  COORDENADOR_CURSO: 'Coordenador de curso',
+  COORDENADOR_CURSO: 'Coordenador',
 }
 
 export function CabecalhoAplicacao() {

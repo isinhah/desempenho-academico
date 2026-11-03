@@ -4,7 +4,6 @@ import secrets
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from app.domain.importacao_csv import processar_importacao_storage
-from app.domain.sincronizar_dados_cursos import executar_etl
 from app.dtos.importacao_dto import (
     ImportacaoProcessadaResponse,
     ProcessarImportacaoRequest,
@@ -29,15 +28,6 @@ def validar_token_admin(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Não autorizado.",
         )
-
-
-@router.post("/sincronizar-dados", status_code=status.HTTP_200_OK)
-def sincronizar_dados(_: None = Depends(validar_token_admin)) -> dict[str, str | int]:
-    registros_sincronizados = executar_etl()
-    return {
-        "mensagem": "Dados sincronizados com sucesso.",
-        "registros_sincronizados": registros_sincronizados,
-    }
 
 
 @router.post(
