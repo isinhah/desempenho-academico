@@ -1,11 +1,60 @@
+x-backend: &backend
+  build:
+    context: ./backend
+  env_file:
+    - ./backend/.env
+  volumes:
+    - ./backend:/app
+
 services:
   api:
-    build:
-      context: ./backend
+    <<: *backend
     command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    env_file:
-      - ./backend/.env
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
+
+  scheduler:
+    <<: *backend
+    command: python -m app.workers.scheduler
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  report-worker:
+    <<: *backend
+    command: python -m app.workers.report_worker
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  notifier:
+    <<: *backend
+    command: python -m app.workers.notifier
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: app
+      RABBITMQ_DEFAULT_PASS: app
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"

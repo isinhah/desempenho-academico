@@ -1,5 +1,3 @@
-"""Regras para cálculo e classificação de scores acadêmicos."""
-
 from math import isclose
 
 
@@ -54,3 +52,27 @@ def calcular_score_com_peso_efetivo(dimensoes: dict) -> dict:
         "score": round(score_total, 2),
         "classe": _classificar_score(score_total),
     }
+
+
+def calcular_score_por_evasao(pct_evasao: float) -> dict:
+    nota_academica = max(0.0, 100 - (pct_evasao * 2))
+    dimensoes = {
+        "financeiro": {
+            "peso_dimensao": 0.55,
+            "indicadores": [
+                {"nome": "pct_rb_rol", "valor": 85, "peso_indicador": 0.70},
+                {"nome": "pct_gp_rol", "valor": 75, "peso_indicador": 0.30},
+            ],
+        },
+        "academico": {
+            "peso_dimensao": 0.45,
+            "indicadores": [
+                {
+                    "nome": "pct_evasao_invertido",
+                    "valor": nota_academica,
+                    "peso_indicador": 1.0,
+                }
+            ],
+        },
+    }
+    return calcular_score_com_peso_efetivo(dimensoes)

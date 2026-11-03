@@ -11,6 +11,8 @@ Uma aplicaçaõ com uma fonte de dados no Supabase, um processo de ETL para vali
 - **Frontend:** React, Vite, Tailwind CSS e Recharts.
 - **API:** Python 3.12, FastAPI, SQLAlchemy, Psycopg e Pydantic.
 - **Banco de dados:** PostgreSQL hospedado no Supabase.
+- **Processamento assíncrono:** RabbitMQ.
+- **E-mail de desenvolvimento:** Mailpit.
 - **Infraestrutura local:** Docker e Docker Compose.
 
 ## Arquitetura
@@ -24,6 +26,12 @@ flowchart LR
     analiticas --> api
     admin["Administrador"] --> endpoint["POST /administracao/<br/>sincronizar-dados"]
     endpoint --> etl
+    scheduler[Scheduler] -->|report.generate| rabbit[RabbitMQ]
+    rabbit -->|report.generate| worker[Report worker]
+    worker --> analiticas
+    worker -->|report.send| rabbit
+    rabbit -->|report.send| notifier[Notifier]
+    notifier --> mailpit[Mailpit]
 ```
 
 ## Fluxo dos dados
@@ -33,6 +41,9 @@ flowchart LR
 3. A API consulta somente as tabelas analíticas para montar o ranking e o histórico.
 4. O frontend consome a API para exibir filtros, ranking, score, indicadores do período mais recente e gráfico de evasão.
 5. Uma pessoa administradora pode disparar o ETL pela rota protegida, usando um token mantido apenas no ambiente do backend.
+6. No primeiro dia de cada mês, o scheduler publica uma solicitação de relatório para o último mês concluído.
+7. O report worker calcula os cursos com maior melhora de score e os cursos em atenção, então entrega o e-mail ao notifier pelo RabbitMQ.
+8. O notifier envia o e-mail ao usuário (coordenador), ele pode ser visualizado no Mailpit.
 
 ## Modelo de dados
 
@@ -105,6 +116,15 @@ Edite `backend/.env` com a URL do **Session pooler** obtida no painel do Supabas
 ```env
 DATABASE_URL=postgresql+psycopg://postgres.PROJECT_REF:SUA_SENHA@HOST_DO_SESSION_POOLER:5432/postgres?sslmode=require
 ADMIN_API_TOKEN=um-token-longo-e-aleatorio
+RABBITMQ_URL=amqp://app:app@rabbitmq:5672/%2F
+COORDINATOR_EMAIL=coordenador@faculdade
+EMAIL_FROM=relatorios@faculdade
+SMTP_HOST=mailpit
+SMTP_PORT=1025
+REPORT_TIMEZONE=America/Sao_Paulo
+REPORT_SCHEDULE_DAY=1
+REPORT_SCHEDULE_HOUR=8
+REPORT_RUN_ON_STARTUP=false
 ```
 
 > Nunca envie o arquivo `backend/.env` ou o token para o Git.
@@ -115,7 +135,7 @@ Antes da primeira sincronização, copie o **conteúdo** de [`backend/migrations
 
 ## Comandos
 
-### Subir a API
+### Subir os serviços
 
 ```bash
 docker compose up --build -d
@@ -125,6 +145,7 @@ docker compose up --build -d
 
 ```bash
 docker compose logs -f api
+docker compose logs -f scheduler report-worker notifier
 ```
 
 ### Executar o frontend
@@ -161,6 +182,26 @@ Como alternativa para desenvolvimento local, execute o módulo dentro do contain
 docker compose exec api python -m app.domain.sincronizar_dados_cursos
 ```
 
+### Relatório mensal automático
+
+O scheduler executa no dia e hora definidos por `REPORT_SCHEDULE_DAY` e `REPORT_SCHEDULE_HOUR`, usando o fuso de `REPORT_TIMEZONE`. Ele sempre gera o relatório do mês anterior ao mês da execução.
+
+Para testar localmente sem esperar o próximo agendamento, altere temporariamente no `backend/.env`:
+
+```env
+REPORT_RUN_ON_STARTUP=true
+```
+
+Em seguida, recrie os serviços:
+
+```bash
+docker compose up --build -d
+```
+
+O report worker seleciona até cinco cursos que mais aumentaram o score em comparação com o mês anterior e até cinco cursos nas classes B ou D. O notifier envia o resumo para `COORDINATOR_EMAIL`.
+
+Depois do teste, retorne `REPORT_RUN_ON_STARTUP` para `false` para não publicar o relatório novamente em cada reinicialização do scheduler.
+
 ### Validar o frontend
 
 ```bash
@@ -183,6 +224,8 @@ docker compose down
 | API | [http://localhost:8000](http://localhost:8000) |
 | Swagger | [http://localhost:8000/docs](http://localhost:8000/docs) |
 | Supabase | Painel do projeto configurado em `DATABASE_URL` |
+| RabbitMQ Management | [http://localhost:15672](http://localhost:15672) (`app` / `app`) |
+| Mailpit | [http://localhost:8025](http://localhost:8025) |
 
 ## Persistência
 

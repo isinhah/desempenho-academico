@@ -1,9 +1,7 @@
-"""Consultas analíticas relacionadas a cursos."""
-
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from app.domain.calculo_score import calcular_score_com_peso_efetivo
+from app.domain.calculo_score import calcular_score_por_evasao
 from app.dtos.curso_dto import (
     CursoDetalheResponse,
     HistoricoIndicadorResponse,
@@ -40,28 +38,7 @@ class CursoService:
         curso: Curso, escola: str, historico: HistoricoIndicador | None
     ) -> CursoDetalheResponse:
         pct_evasao = float(historico.pct_evasao) if historico else 0.0
-        # Cada ponto percentual de evasão reduz dois pontos na nota acadêmica
-        nota_academica = max(0.0, 100 - (pct_evasao * 2))
-        dimensoes = {
-            "financeiro": {
-                "peso_dimensao": 0.55,
-                "indicadores": [
-                    {"nome": "pct_rb_rol", "valor": 85, "peso_indicador": 0.70},
-                    {"nome": "pct_gp_rol", "valor": 75, "peso_indicador": 0.30},
-                ],
-            },
-            "academico": {
-                "peso_dimensao": 0.45,
-                "indicadores": [
-                    {
-                        "nome": "pct_evasao_invertido",
-                        "valor": nota_academica,
-                        "peso_indicador": 1.0,
-                    }
-                ],
-            },
-        }
-        score = calcular_score_com_peso_efetivo(dimensoes)
+        score = calcular_score_por_evasao(pct_evasao)
         return CursoDetalheResponse(
             id=curso.id,
             nome=curso.nome,
