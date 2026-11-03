@@ -16,6 +16,8 @@ class CursoDetalheResponse(CursoResponse):
     alunos_evadidos: int
     pct_evasao: float | None = None
     mes_referencia: date | None = None
+    resumo_academico: str | None = None
+    resumo_referencia: date | None = None
 
 
 class HistoricoIndicadorResponse(BaseModel):

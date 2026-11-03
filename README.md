@@ -37,7 +37,7 @@ flowchart LR
 ## Fluxo dos dados
 
 1. A tabela `cursos` do Supabase é a fonte oficial e contém os dados brutos por curso e mês.
-2. O ETL valida os registros, calcula o percentual de evasão e atualiza as tabelas analíticas `escola`, `curso` e `historico_indicador`.
+2. O ETL valida os registros, calcula o percentual de evasão, atualiza as tabelas analíticas e grava um resumo acadêmico determinístico por curso.
 3. A API consulta somente as tabelas analíticas para montar o ranking e o histórico.
 4. O frontend consome a API para exibir filtros, ranking, score, indicadores do período mais recente e gráfico de evasão.
 5. Uma pessoa administradora pode disparar o ETL pela rota protegida, usando um token mantido apenas no ambiente do backend.
@@ -51,7 +51,7 @@ flowchart LR
 | --- | --- |
 | `cursos` | Fonte oficial no Supabase: escola, curso, alunos ativos, alunos evadidos e mês de referência. |
 | `escola` | Cadastro analítico das escolas. |
-| `curso` | Estado mais recente de alunos ativos e evadidos por curso. |
+| `curso` | Estado mais recente de alunos, resumo acadêmico e data de referência por curso. |
 | `historico_indicador` | Percentual de evasão por curso e mês. |
 | `perfil_usuario` | Papel e situação de acesso de cada usuário autenticado. |
 | `usuario_curso` | Cursos que cada coordenador pode consultar. |
@@ -63,6 +63,10 @@ percentual de evasão = (alunos evadidos / alunos ativos) × 100
 ```
 
 O ETL rejeita registros sem escola, curso ou mês de referência, bem como números negativos e situações em que alunos evadidos sejam maiores que alunos ativos.
+
+### Resumo automático do curso
+
+Ao final de cada sincronização, o ETL analisa o histórico de evasão e grava um parágrafo no curso, por exemplo: “A evasão sobe há 6 meses, de 26,00% para 29,75%. O score atual é 63,33, na Classe B.” A API retorna esse texto pronto na tela de detalhe; ele não é recalculado a cada visita.
 
 ### Score e classes
 
@@ -149,7 +153,11 @@ cp frontend/.env.example frontend/.env
 
 ### Integridade do banco
 
-Antes da primeira sincronização, copie o **conteúdo** de [`backend/migrations/001_integridade_dados_analiticos.sql`](backend/migrations/001_integridade_dados_analiticos.sql) e execute-o uma vez no SQL Editor do Supabase. A migration cria restrições que evitam registros duplicados.
+Antes da primeira sincronização, copie o **conteúdo** das migrations e execute-as uma vez no SQL Editor do Supabase, nesta ordem:
+
+1. [`backend/migrations/001_integridade_dados_analiticos.sql`](backend/migrations/001_integridade_dados_analiticos.sql): restrições contra duplicidade.
+2. [`backend/migrations/002_perfis_e_acessos.sql`](backend/migrations/002_perfis_e_acessos.sql): perfis de acesso e vínculos de coordenadores.
+3. [`backend/migrations/003_resumo_academico_curso.sql`](backend/migrations/003_resumo_academico_curso.sql): campos do resumo automático.
 
 ## Comandos
 

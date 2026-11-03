@@ -4,6 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import engine
+from app.domain.resumo_academico import gerar_resumo_academico
 
 def calcular_pct_evasao(alunos_ativos: int, alunos_evadidos: int) -> float:
     if alunos_ativos == 0:
@@ -170,6 +171,42 @@ def executar_etl() -> int:
                         "WHERE id = :historico_id"
                     ),
                     historicos_atualizados,
+                )
+
+            print("Atualizando resumos acadêmicos dos cursos...", flush=True)
+            cursos_sincronizados = set(cursos_por_chave.values())
+            historicos_por_curso = {curso_id: [] for curso_id in cursos_sincronizados}
+            for historico in conexao.execute(
+                text(
+                    "SELECT curso_id, mes_referencia, pct_evasao "
+                    "FROM historico_indicador ORDER BY curso_id, mes_referencia"
+                )
+            ).mappings():
+                if historico["curso_id"] in historicos_por_curso:
+                    historicos_por_curso[historico["curso_id"]].append(
+                        (historico["mes_referencia"], float(historico["pct_evasao"]))
+                    )
+
+            resumos = []
+            for curso_id, historico in historicos_por_curso.items():
+                if not historico:
+                    continue
+                resumos.append(
+                    {
+                        "curso_id": curso_id,
+                        "resumo_academico": gerar_resumo_academico(historico),
+                        "resumo_referencia": historico[-1][0],
+                    }
+                )
+            if resumos:
+                conexao.execute(
+                    text(
+                        "UPDATE curso SET resumo_academico = :resumo_academico, "
+                        "resumo_referencia = :resumo_referencia, "
+                        "resumo_atualizado_em = CURRENT_TIMESTAMP "
+                        "WHERE id = :curso_id"
+                    ),
+                    resumos,
                 )
     except SQLAlchemyError as error:
         raise RuntimeError(

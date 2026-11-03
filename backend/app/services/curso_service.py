@@ -47,6 +47,8 @@ class CursoService:
             alunos_evadidos=curso.alunos_evadidos,
             pct_evasao=float(historico.pct_evasao) if historico else None,
             mes_referencia=historico.mes_referencia if historico else None,
+            resumo_academico=curso.resumo_academico,
+            resumo_referencia=curso.resumo_referencia,
             score=score["score"],
             classe=score["classe"],
         )

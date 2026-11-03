@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -23,6 +23,9 @@ class Curso(Base):
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
     alunos_ativos: Mapped[int] = mapped_column(Integer, nullable=False)
     alunos_evadidos: Mapped[int] = mapped_column(Integer, nullable=False)
+    resumo_academico: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resumo_referencia: Mapped[date | None] = mapped_column(Date, nullable=True)
+    resumo_atualizado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     escola: Mapped[Escola] = relationship(back_populates="cursos")
     historicos: Mapped[list[HistoricoIndicador]] = relationship(
