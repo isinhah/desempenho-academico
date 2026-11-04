@@ -4,7 +4,7 @@ Projeto educacional para análise de desempenho acadêmico e evasão de cursos d
 
 ## Objetivo
 
-Uma aplicação com uma fonte de dados no Supabase, um processo de ETL para validar e consolidar os indicadores, uma API FastAPI somente de leitura e um dashboard React para exploração dos resultados.
+Uma aplicação com importação mensal de dados pelo Supabase Storage, ETL para validar e consolidar indicadores, API FastAPI protegida por JWT e dashboard React para análise e administração.
 
 ## Tecnologias
 
@@ -19,18 +19,20 @@ Uma aplicação com uma fonte de dados no Supabase, um processo de ETL para vali
 
 ```mermaid
 flowchart LR
-    frontend[Frontend<br/>React + Vite] --> api[API<br/>FastAPI]
-    api --> supabase[(Supabase<br/>PostgreSQL)]
-    storage["Supabase Storage<br/>CSVs mensais"] --> importacao["Importação<br/>validar e registrar"]
+    pessoas["Decano, coordenador<br/>e administrador"] --> frontend["Frontend<br/>React + Vite"]
+    frontend -->|"login"| auth["Supabase Auth"]
+    frontend -->|"JWT"| api["API<br/>FastAPI"]
+    api -->|"valida acesso e consulta dados"| supabase[("Supabase<br/>PostgreSQL")]
+    api -->|"envia CSV"| storage["Supabase Storage<br/>bucket privado"]
+    storage --> importacao["Importação<br/>validar e registrar"]
     importacao --> bruto["curso_indicador_bruto"]
+    importacao --> controle["importacao_arquivo"]
     bruto --> etl["ETL<br/>sincronizar_dados_cursos"]
     etl --> analiticas["escola, curso e<br/>historico_indicador"]
     analiticas --> api
-    admin["Administrador"] --> endpoint["Área administrativa<br/>JWT + upload CSV"]
-    endpoint --> importacao
     scheduler[Scheduler] -->|report.generate| rabbit[RabbitMQ]
     rabbit -->|report.generate| worker[Report worker]
-    worker --> analiticas
+    analiticas -->|"consulta"| worker
     worker -->|report.send| rabbit
     rabbit -->|report.send| notifier[Notifier]
     notifier --> mailpit[Mailpit]
@@ -38,14 +40,14 @@ flowchart LR
 
 ## Fluxo dos dados
 
-1. Um CSV por mês é enviado ao bucket privado `importacoes-cursos` do Supabase Storage.
-2. O endpoint administrativo baixa, valida e registra as 72 linhas do arquivo em `curso_indicador_bruto`, com rastreabilidade em `importacao_arquivo`.
-3. O ETL processa somente a importação registrada, calcula o percentual de evasão, atualiza as tabelas analíticas e grava um resumo acadêmico determinístico por curso.
-4. A API consulta somente as tabelas analíticas para montar o ranking e o histórico.
-5. O frontend consome a API para exibir filtros, ranking, score, indicadores do período mais recente e gráfico de evasão.
-6. Uma pessoa administradora pode processar um CSV pela rota protegida, usando um token mantido apenas no ambiente do backend.
+1. Uma pessoa administradora faz login pelo Supabase Auth e envia um CSV mensal pela tela administrativa.
+2. O frontend envia o arquivo com o JWT da sessão; a API confirma o papel `ADMINISTRADOR`, salva o CSV no bucket privado `importacoes-cursos` e o valida.
+3. A importação registra suas 72 linhas em `curso_indicador_bruto` e seus metadados em `importacao_arquivo`.
+4. O ETL processa somente a importação registrada, calcula o percentual de evasão, atualiza as tabelas analíticas e grava um resumo acadêmico determinístico por curso.
+5. A API consulta as tabelas analíticas para montar o ranking e o histórico, aplicando as permissões do perfil autenticado.
+6. O frontend exibe a visão geral ao decano, o curso vinculado ao coordenador e a tela de importações ao administrador.
 7. No primeiro dia de cada mês, o scheduler publica uma solicitação de relatório para o último mês concluído.
-8. O report worker identifica os perfis ativos e monta um resumo institucional para cada decano ou um resumo dos cursos vinculados para cada coordenador.
+8. O report worker consulta os dados analíticos e monta um resumo institucional para cada decano ou um resumo dos cursos vinculados para cada coordenador.
 9. O notifier envia cada e-mail ao endereço cadastrado no Supabase Auth; eles podem ser visualizados no Mailpit.
 
 ## Modelo de dados
@@ -57,7 +59,7 @@ flowchart LR
 | `escola` | Cadastro analítico das escolas. |
 | `curso` | Estado mais recente de alunos, resumo acadêmico e data de referência por curso. |
 | `historico_indicador` | Percentual de evasão por curso e mês. |
-| `perfil_usuario` | Papel e situação de acesso de cada usuário autenticado. |
+| `perfil_usuario` | Papel e situação de acesso de cada usuário autenticado: decano, coordenador ou administrador. |
 | `usuario_curso` | Cursos que cada coordenador pode consultar. |
 
 ### Cálculo de evasão
