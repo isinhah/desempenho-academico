@@ -7,9 +7,12 @@ import { RotaProtegida } from './components/RotaProtegida'
 import { TelaLogin } from './components/TelaLogin'
 
 const PaginaAnaliseCurso = lazy(() => import('./components/PaginaAnaliseCurso').then((module) => ({ default: module.PaginaAnaliseCurso })))
+const PaginaAdministracao = lazy(() => import('./components/PaginaAdministracao').then((module) => ({ default: module.PaginaAdministracao })))
 
 function PaginaRanking() {
   const { perfil } = useAuth()
+
+  if (perfil?.papel === 'ADMINISTRADOR') return <Navigate to="/administracao/importacoes" replace />
 
   if (perfil?.papel === 'COORDENADOR_CURSO') {
     const cursoId = perfil.cursos_ids[0]
@@ -34,7 +37,7 @@ function AreaAutenticada({ children }) {
 }
 
 function App() {
-  return <div className="min-h-screen bg-canvas text-ink"><div className="h-1 bg-accent-600" aria-hidden="true" /><Routes><Route path="/login" element={<TelaLogin />} /><Route path="/" element={<AreaAutenticada><PaginaRanking /></AreaAutenticada>} /><Route path="/cursos/:cursoId" element={<AreaAutenticada><Suspense fallback={<main className="grid min-h-70 place-items-center text-center text-slate-500">Carregando análise acadêmica do curso...</main>}><PaginaAnaliseCurso /></Suspense></AreaAutenticada>} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></div>
+  return <div className="min-h-screen bg-canvas text-ink"><div className="h-1 bg-accent-600" aria-hidden="true" /><Routes><Route path="/login" element={<TelaLogin />} /><Route path="/" element={<AreaAutenticada><PaginaRanking /></AreaAutenticada>} /><Route path="/administracao/importacoes" element={<AreaAutenticada><Suspense fallback={<main className="grid min-h-70 place-items-center text-center text-slate-500">Carregando administração...</main>}><PaginaAdministracao /></Suspense></AreaAutenticada>} /><Route path="/cursos/:cursoId" element={<AreaAutenticada><Suspense fallback={<main className="grid min-h-70 place-items-center text-center text-slate-500">Carregando análise acadêmica do curso...</main>}><PaginaAnaliseCurso /></Suspense></AreaAutenticada>} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></div>
 }
 
 export default App

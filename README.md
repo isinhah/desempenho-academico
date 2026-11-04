@@ -26,7 +26,7 @@ flowchart LR
     bruto --> etl["ETL<br/>sincronizar_dados_cursos"]
     etl --> analiticas["escola, curso e<br/>historico_indicador"]
     analiticas --> api
-    admin["Administrador"] --> endpoint["POST /administracao/importacoes/processar"]
+    admin["Administrador"] --> endpoint["Área administrativa<br/>JWT + upload CSV"]
     endpoint --> importacao
     scheduler[Scheduler] -->|report.generate| rabbit[RabbitMQ]
     rabbit -->|report.generate| worker[Report worker]
@@ -96,7 +96,8 @@ No estado atual do projeto, a evasão é o único indicador acadêmico alimentad
 | `GET` | `/cursos?escola_id={id}` | Retorna o ranking filtrado por escola. |
 | `GET` | `/cursos/{id}` | Retorna os indicadores atuais de um curso. |
 | `GET` | `/cursos/{id}/historico` | Retorna a evolução mensal da evasão. |
-| `POST` | `/administracao/importacoes/processar` | Valida e processa um CSV mensal do Storage; exige `X-Admin-Token`. |
+| `GET` | `/administracao/importacoes` | Lista importações recentes; exige perfil `ADMINISTRADOR`. |
+| `POST` | `/administracao/importacoes/upload` | Envia e processa um CSV mensal; exige perfil `ADMINISTRADOR`. |
 
 A documentação interativa está disponível em [http://localhost:8000/docs](http://localhost:8000/docs).
 
@@ -116,17 +117,10 @@ Crie o arquivo de ambiente do backend a partir do exemplo:
 cp backend/.env.example backend/.env
 ```
 
-Gere um token aleatório:
-
-```bash
-openssl rand -hex 32
-```
-
-Edite `backend/.env` com a URL do **Session pooler** obtida no painel do Supabase e use o valor gerado em `ADMIN_API_TOKEN`:
+Edite `backend/.env` com a URL do **Session pooler** obtida no painel do Supabase:
 
 ```env
 DATABASE_URL=postgresql+psycopg://postgres.PROJECT_REF:SUA_SENHA@HOST_DO_SESSION_POOLER:5432/postgres?sslmode=require
-ADMIN_API_TOKEN=um-token-longo-e-aleatorio
 SUPABASE_URL=https://SEU_PROJECT_REF.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=SUA_CHAVE_SECRETA_DO_SUPABASE
 SUPABASE_STORAGE_BUCKET=importacoes-cursos
@@ -140,7 +134,7 @@ REPORT_SCHEDULE_HOUR=8
 REPORT_RUN_ON_STARTUP=false
 ```
 
-> A chave secreta/service_role é usada somente pelo backend para acessar o bucket privado. Nunca envie `backend/.env`, o token administrativo ou essa chave ao Git; ela nunca deve ser usada no frontend.
+> A chave secreta/service_role é usada somente pelo backend para acessar o bucket privado. Nunca envie `backend/.env` ou essa chave ao Git; ela nunca deve ser usada no frontend.
 
 ### Autenticação e autorização
 
@@ -148,6 +142,16 @@ Execute também o conteúdo de [`backend/migrations/002_perfis_e_acessos.sql`](b
 
 - `DECANO`: consulta ranking, escolas e todos os cursos.
 - `COORDENADOR_CURSO`: consulta somente os cursos presentes em `usuario_curso`.
+- `ADMINISTRADOR`: acessa exclusivamente a tela de importações e pode enviar CSVs mensais.
+
+Para criar um administrador de teste, primeiro crie o usuário em **Authentication → Users**, copie seu UUID e execute após a migration 005:
+
+```sql
+INSERT INTO public.perfil_usuario (id, nome, papel)
+VALUES ('UUID_DO_USUARIO', 'Administrador', 'ADMINISTRADOR')
+ON CONFLICT (id) DO UPDATE
+SET nome = EXCLUDED.nome, papel = EXCLUDED.papel, ativo = TRUE;
+```
 
 No frontend, crie `frontend/.env` a partir do exemplo e informe a URL do projeto e a chave `anon`/`publishable` em **Project Settings → API**:
 
@@ -165,6 +169,7 @@ Antes da primeira sincronização, copie o **conteúdo** das migrations e execut
 2. [`backend/migrations/002_perfis_e_acessos.sql`](backend/migrations/002_perfis_e_acessos.sql): perfis de acesso e vínculos de coordenadores.
 3. [`backend/migrations/003_resumo_academico_curso.sql`](backend/migrations/003_resumo_academico_curso.sql): campos do resumo automático.
 4. [`backend/migrations/004_importacoes_csv.sql`](backend/migrations/004_importacoes_csv.sql): controle de CSVs mensais e dados brutos importados.
+5. [`backend/migrations/005_perfil_administrador.sql`](backend/migrations/005_perfil_administrador.sql): papel de administrador para a área de importações.
 
 ## Comandos
 
@@ -191,24 +196,19 @@ npm run dev
 
 Abra o frontend em [http://localhost:5173](http://localhost:5173).
 
-### Processar um CSV mensal do Supabase Storage
+### Processar um CSV mensal pela área administrativa
 
-Crie no painel do Supabase um bucket **privado** chamado `importacoes-cursos`. Envie para ele um arquivo no formato `cursos_YYYY-MM.csv`, com os cabeçalhos abaixo e exatamente 72 linhas de dados:
+Crie no painel do Supabase um bucket **privado** chamado `importacoes-cursos`. Em seguida, entre com um usuário de perfil `ADMINISTRADOR`: ele será direcionado a `/administracao/importacoes`.
+
+Selecione nessa tela um arquivo no formato `cursos_YYYY-MM.csv`, com os cabeçalhos abaixo e exatamente 72 linhas de dados:
 
 ```text
 escola,curso,alunos_ativos,alunos_evadidos,mes_referencia
 ```
 
-Depois, processe somente o arquivo enviado. O `caminho_storage` é o caminho dentro do bucket; neste exemplo, o arquivo está na raiz:
+O frontend envia o CSV autenticado à API. A API valida o arquivo, armazena-o no bucket privado, registra a importação e sincroniza seus 72 cursos. A tela também mostra o histórico das importações concluídas ou com falha.
 
-```bash
-curl -X POST http://localhost:8000/administracao/importacoes/processar \
-  -H "Content-Type: application/json" \
-  -H "X-Admin-Token: SEU_TOKEN" \
-  -d '{"caminho_storage":"cursos_2026-10.csv"}'
-```
-
-Exemplo de resposta:
+Exemplo de resultado:
 
 ```json
 {
@@ -222,7 +222,7 @@ Exemplo de resposta:
 }
 ```
 
-O mesmo caminho não pode ser processado duas vezes; para uma correção, envie o CSV para um novo caminho, por exemplo `correcoes/cursos_2026-10_v2.csv`. O nome final do arquivo continua precisando seguir `cursos_YYYY-MM.csv`.
+Um CSV com o mesmo nome não pode ser enviado duas vezes. Para uma correção de competência, use um sufixo, por exemplo `cursos_2026-10_revisao-1.csv`.
 
 ### Preparar CSVs mensais locais
 

@@ -28,7 +28,7 @@ COLUNAS_ESPERADAS = (
     "mes_referencia",
 )
 CURSOS_POR_ARQUIVO = 72
-PADRAO_NOME_ARQUIVO = re.compile(r"^cursos_(\d{4})-(\d{2})\.csv$")
+PADRAO_NOME_ARQUIVO = re.compile(r"^cursos_(\d{4})-(\d{2})(?:_[a-z0-9-]+)?\.csv$")
 LIMITE_BYTES_ARQUIVO = 1_000_000
 
 
@@ -183,6 +183,47 @@ def _baixar_do_storage(caminho_storage: str) -> bytes:
     return conteudo
 
 
+def _enviar_para_storage(caminho_storage: str, conteudo: bytes) -> None:
+    url_supabase = os.getenv("SUPABASE_URL", "").rstrip("/")
+    chave_servico = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    bucket = os.getenv("SUPABASE_STORAGE_BUCKET", "importacoes-cursos")
+    if not url_supabase or not chave_servico:
+        raise StorageUnavailableException(
+            "SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY devem ser configurados no backend."
+        )
+
+    url = (
+        f"{url_supabase}/storage/v1/object/{quote(bucket, safe='')}/"
+        f"{quote(caminho_storage, safe='/')}"
+    )
+    requisicao = Request(
+        url,
+        data=conteudo,
+        method="POST",
+        headers={
+            "apikey": chave_servico,
+            "Authorization": f"Bearer {chave_servico}",
+            "Content-Type": "text/csv; charset=utf-8",
+            "x-upsert": "false",
+        },
+    )
+    try:
+        with urlopen(requisicao, timeout=20):  # noqa: S310
+            pass
+    except HTTPError as error:
+        if error.code == 409:
+            raise ImportacaoDuplicadaException(
+                "Já existe um arquivo com esse nome no Storage."
+            ) from error
+        raise StorageUnavailableException(
+            f"Não foi possível enviar o arquivo ao Storage (HTTP {error.code})."
+        ) from error
+    except URLError as error:
+        raise StorageUnavailableException(
+            "Não foi possível conectar ao Supabase Storage."
+        ) from error
+
+
 def _registrar_importacao(dados: DadosImportacao) -> int:
     try:
         with engine.begin() as conexao:
@@ -256,6 +297,16 @@ def _atualizar_status(
 def processar_importacao_storage(caminho_storage: str) -> ResultadoImportacao:
     caminho = _validar_caminho(caminho_storage)
     dados = validar_csv_mensal(_baixar_do_storage(caminho), caminho)
+    return _processar_dados_importacao(dados)
+
+
+def processar_upload_csv(nome_arquivo: str, conteudo: bytes) -> ResultadoImportacao:
+    dados = validar_csv_mensal(conteudo, nome_arquivo)
+    _enviar_para_storage(dados.caminho_storage, conteudo)
+    return _processar_dados_importacao(dados)
+
+
+def _processar_dados_importacao(dados: DadosImportacao) -> ResultadoImportacao:
     importacao_id = _registrar_importacao(dados)
     try:
         registros_sincronizados = executar_etl_importacao(importacao_id)
@@ -273,3 +324,19 @@ def processar_importacao_storage(caminho_storage: str) -> ResultadoImportacao:
         registros_sincronizados=registros_sincronizados,
         status="CONCLUIDA",
     )
+
+
+def listar_importacoes(limite: int = 20) -> list[dict]:
+    with engine.connect() as conexao:
+        return [
+            dict(registro)
+            for registro in conexao.execute(
+                text(
+                    "SELECT id, caminho_storage, nome_arquivo, mes_referencia, status, "
+                    "linhas_lidas, linhas_importadas, linhas_rejeitadas, mensagem_erro, "
+                    "criado_em, processado_em FROM importacao_arquivo "
+                    "ORDER BY criado_em DESC LIMIT :limite"
+                ),
+                {"limite": limite},
+            ).mappings()
+        ]

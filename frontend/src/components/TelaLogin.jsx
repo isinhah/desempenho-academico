@@ -15,9 +15,11 @@ export function TelaLogin() {
   }
 
   if (usuario) {
-    const destino = perfil?.papel === 'DECANO'
-      ? '/'
-      : location.state?.from?.pathname || '/'
+    const destino = perfil?.papel === 'ADMINISTRADOR'
+      ? '/administracao/importacoes'
+      : perfil?.papel === 'DECANO'
+        ? '/'
+        : location.state?.from?.pathname || '/'
 
     return <Navigate to={destino} replace />
   }

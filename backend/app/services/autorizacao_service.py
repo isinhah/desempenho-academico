@@ -18,6 +18,10 @@ class UsuarioAutenticado:
     def e_decano(self) -> bool:
         return self.papel == "DECANO"
 
+    @property
+    def e_administrador(self) -> bool:
+        return self.papel == "ADMINISTRADOR"
+
     def pode_acessar_curso(self, curso_id: int) -> bool:
         return self.e_decano or curso_id in self.cursos_ids
 
@@ -62,6 +66,11 @@ class AutorizacaoService:
 def exigir_visao_geral(usuario: UsuarioAutenticado) -> None:
     if not usuario.e_decano:
         raise AuthorizationException("Seu perfil não possui acesso à visão geral.")
+
+
+def exigir_administrador(usuario: UsuarioAutenticado) -> None:
+    if not usuario.e_administrador:
+        raise AuthorizationException("Seu perfil não possui acesso à administração.")
 
 
 def exigir_acesso_ao_curso(usuario: UsuarioAutenticado, curso_id: int) -> None:

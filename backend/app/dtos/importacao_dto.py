@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -15,3 +15,17 @@ class ImportacaoProcessadaResponse(BaseModel):
     linhas_importadas: int
     registros_sincronizados: int
     status: str
+
+
+class ImportacaoArquivoResponse(BaseModel):
+    id: int
+    caminho_storage: str
+    nome_arquivo: str
+    mes_referencia: date
+    status: str
+    linhas_lidas: int
+    linhas_importadas: int
+    linhas_rejeitadas: int
+    mensagem_erro: str | None = None
+    criado_em: datetime
+    processado_em: datetime | None = None
