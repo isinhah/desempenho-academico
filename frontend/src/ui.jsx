@@ -36,9 +36,10 @@ const tones = {
   bad: { dot: 'bg-rose-500', value: 'text-rose-700' },
 }
 
-export function StatCard({ label, value, caption, tone = 'neutral' }) {
+export function StatCard({ label, value, caption, tone = 'neutral', wrapValue = false }) {
   const estilo = tones[tone]
-  return <article className="min-w-0 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div className="flex items-center gap-2 text-sm text-slate-600"><span className={`size-1.5 rounded-full ${estilo.dot}`} aria-hidden="true" />{label}</div><div className={`mt-1.5 truncate text-3xl font-bold tracking-tight ${estilo.value}`}>{value}</div>{caption && <div className="mt-1 text-sm text-slate-600">{caption}</div>}</article>
+  const tamanhoValor = wrapValue ? 'break-words text-xl leading-tight sm:text-2xl' : 'truncate text-3xl'
+  return <article className="min-w-0 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div className="flex items-center gap-2 text-sm text-slate-600"><span className={`size-1.5 rounded-full ${estilo.dot}`} aria-hidden="true" />{label}</div><div className={`mt-1.5 font-bold tracking-tight ${tamanhoValor} ${estilo.value}`}>{value}</div>{caption && <div className="mt-1 text-sm text-slate-600">{caption}</div>}</article>
 }
 
 export function FilterTabs({ options, value, onChange }) {
