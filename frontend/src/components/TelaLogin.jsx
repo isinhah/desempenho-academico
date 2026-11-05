@@ -19,7 +19,9 @@ export function TelaLogin() {
       ? '/administracao/importacoes'
       : perfil?.papel === 'DECANO'
         ? '/'
-        : location.state?.from?.pathname || '/'
+        : perfil?.papel === 'COORDENADOR_CURSO' && perfil.cursos_ids[0]
+          ? `/cursos/${perfil.cursos_ids[0]}`
+          : location.state?.from?.pathname || '/'
 
     return <Navigate to={destino} replace />
   }

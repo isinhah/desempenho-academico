@@ -1,12 +1,10 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { useCurso } from '../hooks/useCurso'
 import { useRankingCursos } from '../hooks/useRankingCursos'
 import { HistoricoCurso } from './HistoricoCurso'
 import { useAuth } from '../auth/useAuth'
 
-export function PaginaAnaliseCurso() {
-  const { perfil } = useAuth()
-  const { cursoId } = useParams()
+function ConteudoPaginaAnaliseCurso({ perfil, cursoId }) {
   const { curso, loading, error } = useCurso(cursoId)
   const { cursos } = useRankingCursos(undefined, perfil?.papel === 'DECANO')
   const posicao = cursos.findIndex((item) => String(item.id) === String(cursoId)) + 1
@@ -19,4 +17,19 @@ export function PaginaAnaliseCurso() {
       {curso && !loading && <HistoricoCurso curso={curso} posicao={posicao || undefined} totalCursos={cursos.length || undefined} />}
     </main>
   )
+}
+
+export function PaginaAnaliseCurso() {
+  const { perfil } = useAuth()
+  const { cursoId } = useParams()
+
+  if (
+    perfil?.papel === 'COORDENADOR_CURSO'
+    && perfil.cursos_ids[0]
+    && String(cursoId) !== String(perfil.cursos_ids[0])
+  ) {
+    return <Navigate to={`/cursos/${perfil.cursos_ids[0]}`} replace />
+  }
+
+  return <ConteudoPaginaAnaliseCurso perfil={perfil} cursoId={cursoId} />
 }
